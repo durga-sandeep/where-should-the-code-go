@@ -426,7 +426,7 @@ def interface_findings(cells, comparisons, replication54=None):
     text = []
     # DeepSeek Flash: forced call suppresses reasoning
     if inter('DeepSeek V4 Flash'):
-        text.append(f"Table~\\ref{{tab:interaction_canonical}} crosses requested effort with the tool-calling interface. Every effect below belongs to a model and provider pair and may come from the serving stack. For DeepSeek V4 Flash on its provider the forced call effectively disabled reasoning: forced canonical calls averaged {tok('dsflash_low', 'canonical')} reasoning tokens against {tok('dsflash_low_auto', 'canonical')} under automatic choice, and accuracy is {v('dsflash_low', 'canonical')} against {v('dsflash_low_auto', 'canonical')}\\%; effort changes nothing under either interface. ")
+        text.append(f"Table~\\ref{{tab:interaction_canonical}} crosses requested effort with the tool-calling interface. For DeepSeek V4 Flash on its provider the forced call effectively disabled reasoning: forced canonical calls averaged {tok('dsflash_low', 'canonical')} reasoning tokens against {tok('dsflash_low_auto', 'canonical')} under automatic choice, and accuracy is {v('dsflash_low', 'canonical')} against {v('dsflash_low_auto', 'canonical')}\\%; effort changes nothing under either interface. ")
     # mini and dspro interaction
     m = inter('GPT-5.4 mini'); dp = inter('DeepSeek V4 Pro')
     if m and dp:
