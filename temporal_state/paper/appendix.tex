@@ -1,0 +1,261 @@
+\appendix
+\section{Executable semantics, provider settings and sampling}
+\label{app:semantics}
+The task reconstructs the state supported by a versioned report history, rather
+than recovering unobserved physical inventory. For each report $r$, let $e(r)$ be
+its logical event identifier, $v(r)$ its revision, $t(r)$ its event time and
+$a(r)$ its received time. The selected version is
+\[
+ r_e^*(K)=\arg\max_{r:\,e(r)=e,\,a(r)\leq K} v(r).
+\]
+Identifiers with no visible report are absent. Only selected versions with
+$t(r_e^*)\leq T$ are replayed. Thus a newer visible revision outside the target
+horizon does not cause an older revision to be substituted. This edge case is
+covered by unit tests, although generated experimental historical event times
+all precede $T$. The generator uses distinct revisions, so revision ties do not
+arise. Replay sorts by event time and then event identifier.
+
+\paragraph{Illustrative two-clock example.}
+Start with two units of stock. A receipt of five units occurs at event time 1,
+but its report arrives at time 4. A demand of six units occurs and is reported
+at time 2. Reconstruct through $T=3$. With $K=3$, only the demand is visible:
+the reconstructed stock is zero and historical loss is four. With $K=4$, replay
+the receipt before the demand: reconstructed stock is one and historical loss
+is zero. A supplied future demand of three units at time 5 then loses three
+units in the first view and two in the second. Both views finish at zero stock
+and have first future stockout time 5. The later knowledge view revises an
+earlier reconstruction; it is not a forecast that had access to later reports.
+
+\paragraph{Resource and output contract.}
+OpenAI requests use dated model identifiers
+\texttt{gpt-5.4-mini-2026-03-17} and \texttt{gpt-5.4-2026-03-05}, requested
+reasoning effort low (medium and high for the effort sweep), and forced
+\texttt{submit\_answer} tool choice. Both Anthropic configurations use
+\texttt{claude-sonnet-4-6}, automatic tool choice, and disabled parallel tool use;
+one additionally requests manual extended thinking with a 4096-token budget. The
+budget is a requested thinking target, not a strict observed token ceiling. Full
+arms use a strict five-integer schema; state-only arms use a strict two-integer
+schema and instructions that replace the future-scenario paragraph with an explicit
+statement that no future is to be simulated. All requests allow 16384 total output
+tokens. Automatic tool choice may yield reasoning text without an answer; absent or
+malformed answers remain failures. Requests have a 420-second transport timeout and
+are not retried or repaired. Exact payloads, returned token usage and provider
+responses are included in the supplement. These interfaces and compute allowances
+are disclosed rather than treated as a controlled cross-provider comparison.
+
+\paragraph{Sampling and uncertainty.}
+The primary cohort contains 2304 requests, the later-knowledge control 576,
+the display-order control 192, and the profile cohort 1152, for 4224 in total.
+The effort sweeps add \EffortRequests\ requests, the state-only arms \StateRequests, the
+code-inside arms \ToolRequests, and the replication \ReplicationRequests, all on the same histories. The controls reuse the first 24 primary
+histories. Each of the 96 primary histories and 48 profile windows has two
+repetitions per configuration and arm. Repetition averages are paired within the
+same history/window before bootstrap resampling. Intervals characterize variation
+within this constructed sample; they are not population guarantees or corrections
+for multiple comparisons. Source-store separation does not establish independence
+of retail behavior across stores. Extension studies add configurations and arms on
+the archived histories, not independent histories.
+\input{coverage_text}
+\paragraph{Overlap and contamination scope.}
+A post-hoc exact-content audit finds no duplicates within, or overlap between,
+24 regenerated v2 development histories and the 96 heldout histories, or between
+16 development and 48 heldout profile tasks. Profile source stores are disjoint;
+exact ordered quantized sales sequences also have no overlap. Checks use frozen
+generators and are archived with their scope. Intentional control/repetition
+reuse is excluded. These checks do not test near-duplicates or provider training
+data; the public sales profiles may have appeared in training. No cases were
+removed or rescored by this audit.
+\paragraph{Retail-profile time axis.}
+Source hours determine ordered two-hour sales bins. The adapter assigns synthetic
+event times to alternating historical receipts/demands and interleaved future
+receipts/demands; these event-time units are not literal calendar hours. The
+profile check preserves sequential quantity patterns rather than validating
+real operational reporting timestamps.
+
+\section{All-five accuracy tables}
+\label{app:tables}
+Tables~\ref{tab:main} and~\ref{tab:external} report both the all-five and the
+future-joint endpoints for the original grid; Table~\ref{tab:factors} stratifies mini's
+synthetic results by design factor; Table~\ref{tab:allcells} lists every cell including
+the extension studies. Figures~\ref{fig:errors} and~\ref{fig:cost} plot the original
+grid's historical and future error rates and observed token cost by representation.
+\input{main_table}
+\input{external_table}
+\input{factor_table}
+\input{extension_all_cells_table}
+
+\section{Paired temporal and display controls}
+\label{app:controls}
+On the first 24 heldout bases (one factorial cycle), a paired view changes only
+$K$ to 130, revealing later reports. This is retrospective revised-state simulation,
+not a forecast made at time 100. Another control shuffles raw report display order
+while preserving all timestamps and the correct answer. We report both-view
+correctness as well as sensitivity and invariance, since consistent wrong answers
+are not evidence of reliability (Table~\ref{tab:controls}).
+\input{controls_table}
+Separate requests also vary stochastically; cross-view disagreement alone does
+not isolate an order effect. Table~\ref{tab:repeat} uses the existing two repetitions on the same 24 control
+bases. Within-view pairs compare repetitions 0 and 1; cross-view pairs compare
+corresponding repetitions across the original and shuffled views. All are
+separate API requests, with no shared random seed. Thus cross-view disagreement
+includes ordinary request variation. Mini's cross-view agreement of 27.1\%
+lies between its within-view rates of 25.0\% and 33.3\%; these observations do
+not isolate a causal display-order effect. This diagnostic was added after
+collection of the synthetic cohorts, without additional model calls.
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{lrrr}
+\toprule
+Configuration & Original repeats & Shuffled repeats & Cross-view \\
+\midrule
+GPT-5.4 mini (low) & 25.0 / 20.8 & 33.3 / 33.3 & 27.1 / 25.0 \\
+GPT-5.4 (low) & 70.8 / 70.8 & 70.8 / 70.8 & 68.8 / 68.8 \\
+Sonnet 4.6 & 95.8 / 95.8 & 83.3 / 83.3 & 89.6 / 89.6 \\
+Sonnet + thinking & 91.7 / 91.7 & 95.8 / 95.8 & 93.8 / 93.8 \\
+\bottomrule
+\end{tabular}
+\caption{Post-hoc repeat diagnostics (\%): identical valid answers / both correct.
+Within-view columns have 24 repetition pairs; cross-view has 48 matched-repetition
+pairs over those same 24 bases. These are descriptive rates, not independent
+samples of histories.}
+\label{tab:repeat}
+\end{table}
+
+\section{Consistency and decision diagnostics}
+\label{app:diagnostics}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/decision_margins.pdf}
+  \caption{GPT-5.4 mini (low): wrong binary stockout decisions within each state category,
+  for the model's decision and for exact continuation from its emitted stock (``fixes'':
+  wrong model decisions made right by continuation; ``breaks'': right decisions made wrong).
+  Continuation is error-free by construction in the first two rows and always wrong in the
+  third; the empirical content is the category sizes and the model decisions. The same-side
+  share depends on how far true stocks sit from the threshold: median distance 43 units on
+  synthetic histories and 11 on profiles. Descriptive percentages.}
+  \label{fig:decision}
+\end{figure}
+\input{diagnostic_findings}
+\paragraph{An observed failure with a scenario consequence.}
+As a post-hoc illustration, primary base \texttt{b0007}, mini raw repetition 0,
+returns starting stock 31 instead of 18. Its future outputs are terminal stock 6,
+zero loss, and no stockout. Exact rollout from its emitted stock of 31 produces
+precisely those outputs, while rollout from the correct stock of 18 ends at zero,
+loses seven units, and first stocks out at time 130. This trace is consistent
+with a wrong-state rollout, without establishing the model's internal process.
+It is illustrative rather than a separately sampled test. Both repetitions of this
+request return the identical five fields, so repeat agreement would not have flagged
+the error.
+
+For any consistent rollout, terminal stock minus future loss equals starting
+stock plus supplied receipts minus supplied demand. Consequently, the correct
+terminal-stock/loss pair cannot be obtained by consistent replay from a wrong
+starting stock in this environment. An output with wrong stock and correct
+future quantities would demonstrate observable inconsistency, not reliable
+recovery. Historical-loss errors can still coexist with correct starting stock
+and future outputs.
+
+\paragraph{Descriptive task-length strata.}
+Mini raw all-five success is 39/64, 16/64, and 8/64 for 12, 36, and 72 historical
+events, respectively; future-joint success is 43/64, 18/64, and 11/64. These are
+different seeded histories within the factorial design, not matched
+interventions identifying an isolated length or temporal-reasoning effect.
+All configuration and factor strata remain available in the analysis artifact.
+
+\paragraph{Why correct totals do not certify replay.}
+A post-hoc snapshot trace (mini, primary \texttt{b0019}, repetition 0) copies
+starting stock 9 correctly but emits final stock 0 and future loss 79 instead
+of 8 and 87. Both pairs satisfy the same conservation equation. The final
+receipt adds eight units after the last demand; lost sales cannot be filled
+retroactively, so these eight units must remain. This shows why event-order
+execution remains necessary after correct historical reconstruction, without
+inferring the model's internal algorithm.
+
+\paragraph{Executable continuation (post-hoc).}
+\label{app:continuation}
+Table~\ref{tab:continuationfull} retains all input arms and configurations for
+the two main cohorts; the supplement also includes both control cohorts.
+This is a deterministic transformation of original answers, not newly sampled
+model behavior. The original prompt requests all five fields, and the strict
+five-field validity gate is retained even if an otherwise invalid answer has a
+usable stock field. For valid answers, continuation future-joint accuracy equals
+starting-stock accuracy: conservation makes correct final stock and loss
+impossible under consistent replay from an incorrect stock. This equivalence is
+an endpoint property, not a new inventory algorithm. An accidentally correct
+future triple paired with wrong stock can regress; this occurs once for mini's
+raw retail responses. No such case is removed.
+
+The operational false-alarm/miss endpoints need not move together. For mini's
+canonical synthetic responses, execution reduces false alarms from 5/70 to 1/70
+and misses from 7/122 to 1/122; canonical retail rates improve from 15/46 to 1/46
+and 7/50 to 1/50. For raw retail responses, false alarms rise from 15/46 to 19/46
+while misses fall from 10/49 to 3/49. These rates condition on valid answers;
+the invalid raw retail response belongs to a positive-stockout task and remains
+a failure in the unconditional accuracy. They measure detection, not timing.
+\input{continuation_full_table}
+
+\section{Extension studies: protocol summary and full results}
+\label{app:extensions}
+Both extension studies were specified in a written protocol after the original
+outcomes were known and before any of their calls, with stated hypotheses, and are
+reported in full whatever they show. They reuse the archived heldout histories, so
+they add configurations and arms rather than independent histories. The effort sweeps
+hold every prompt, task and schema fixed and change only the provider's requested
+reasoning effort (GPT-5.4 mini at medium and high on all arms; GPT-5.4 at medium and high on
+raw and canonical input, added by Amendment 2). The code-inside arms add the provider's
+hosted code-execution tool to the two OpenAI configurations with automatic tool choice,
+so the model decides whether to run code; the instructions gain one sentence saying the
+tool is available. The state-only arms withhold the future schedule and
+horizon, ask for the two historical integers, and apply the schedule in code; invalid
+two-field answers fail and are not repaired. A same-period replication of the original
+low-effort synthetic cells was added by amendment, before its calls, to rule out a
+collection-date confound in the effort comparison. Every response was reparsed and
+rescored independently of the runner, the planned grids were verified complete, task
+payloads were checked byte-for-byte against the archived cohorts, and the conservation
+identity was verified on every hybrid answer. Full per-cell counts, paired differences
+with intervals, token usage and cost are in the supplement's extension audit;
+Table~\ref{tab:allcells} lists every cell and Tables~\ref{tab:extpaired_heldout}
+and~\ref{tab:extpaired_profiles} every paired difference. The anonymous supplement
+contains all code, generators, prompts, raw provider responses, audits and the
+reasoning-summary traces of diagnostic D1.
+
+\input{extension_appendix}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/historical_future_errors.pdf}
+  \caption{Historical and future-stage errors under the three representations in
+  the original grid. Snapshot historical answers are supplied by code; their accuracy
+  measures faithful copying. Future-stage errors remain the substantive endpoint for
+  that representation.}
+  \label{fig:errors}
+\end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figures/protocol_cost.pdf}
+  \caption{Observed API token-cost estimates under each representation in the
+  original grid. These are configuration-dependent resource measurements, not
+  compute-matched comparisons or provider billing invoices.}
+  \label{fig:cost}
+\end{figure}
+
+\section{Amendment 4: capability ladder, interfaces and transport}
+\label{app:ladder}
+Protocol \texttt{protocol\_v4\_extensions.md} (frozen before its calls, with transport notes
+appended before each rerun) adds interface-matched GPT-5.4 cells (E6), Claude Haiku~4.5 (E7)
+and six open-weight models in a requested-effort by tool-choice cross (E8), plus a same-period
+GPT-5.4 forced-call replication (E6b). Open-weight models are served through OpenRouter with
+one pinned upstream per model and fallbacks disabled; the served provider is stored in every
+record and checked by the audit. Rate limiting by third-party upstreams (HTTP 429) is retried
+with bounded backoff before any completion exists, and requests that exhaust their attempts
+are re-issued in documented completion passes; a model output is never re-sampled. Two
+grids were interrupted and repeated in full before any accuracy was inspected, and the Qwen
+provider withdrew the model before the forced-call profile stage, so those four cells are
+absent.
+\input{ladder_appendix}
+\input{interaction_raw_table}
+The original forced-call placement table and the mini/GPT-5.4 requested-effort table follow
+for comparison with the interface-matched Table~\ref{tab:ladder}.
+\input{extension_state_table}
+\input{extension_effort_table}
+

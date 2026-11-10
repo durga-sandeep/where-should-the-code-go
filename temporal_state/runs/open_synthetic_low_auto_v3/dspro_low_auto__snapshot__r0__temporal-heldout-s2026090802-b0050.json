@@ -1,0 +1,163 @@
+{
+  "episode": "dspro_low_auto__snapshot__r0__temporal-heldout-s2026090802-b0050",
+  "base_id": "temporal-heldout-s2026090802-b0050",
+  "configuration": "dspro_low_auto",
+  "arm": "snapshot",
+  "rep": 0,
+  "model": "deepseek/deepseek-v4-pro-0813",
+  "request": {
+    "model": "deepseek/deepseek-v4-pro-0813",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field."
+      },
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"snapshot\",\"initial_stock\":14,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":101,\"kind\":\"demand\",\"quantity\":16},{\"event_id\":\"F-01\",\"event_time\":102,\"kind\":\"demand\",\"quantity\":16},{\"event_id\":\"F-02\",\"event_time\":107,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"F-03\",\"event_time\":109,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"F-04\",\"event_time\":112,\"kind\":\"demand\",\"quantity\":9},{\"event_id\":\"F-05\",\"event_time\":113,\"kind\":\"demand\",\"quantity\":11},{\"event_id\":\"F-06\",\"event_time\":115,\"kind\":\"demand\",\"quantity\":16},{\"event_id\":\"F-07\",\"event_time\":118,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"F-08\",\"event_time\":119,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-09\",\"event_time\":121,\"kind\":\"receipt\",\"quantity\":3},{\"event_id\":\"F-10\",\"event_time\":124,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-11\",\"event_time\":127,\"kind\":\"demand\",\"quantity\":14}],\"historical_state\":{\"stock_at_target\":37,\"historical_lost\":29}}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "submit_answer",
+          "description": "Submit exact simulated quantities.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "stock_at_target": {
+                "type": "integer"
+              },
+              "historical_lost": {
+                "type": "integer"
+              },
+              "stock_at_horizon": {
+                "type": "integer"
+              },
+              "future_lost": {
+                "type": "integer"
+              },
+              "first_future_stockout_time": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "stock_at_target",
+              "historical_lost",
+              "stock_at_horizon",
+              "future_lost",
+              "first_future_stockout_time"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_tokens": 16384,
+    "reasoning": {
+      "effort": "low"
+    },
+    "provider": {
+      "only": [
+        "baidu"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "answer": {
+    "stock_at_target": 37,
+    "historical_lost": 29,
+    "stock_at_horizon": 0,
+    "future_lost": 63,
+    "first_future_stockout_time": 107
+  },
+  "status": "submitted",
+  "cost_usd": 0.0018666,
+  "response": {
+    "id": "gen-1788902536-b6gSvdjQGivxmXKgEhJU",
+    "object": "chat.completion",
+    "created": 1788902536,
+    "model": "deepseek/deepseek-v4-pro-0813",
+    "provider": "Baidu",
+    "system_fingerprint": null,
+    "service_tier": null,
+    "choices": [
+      {
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "tool_calls",
+        "native_finish_reason": "tool_calls",
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "reasoning": "We are given a \"snapshot\" representation. The input has historical_state with stock_at_target=37 and historical_lost=29. There's no raw report history, just snapshot. So the canonical arm supplies already selected eligible events? Actually for snapshot arm, the historical state is exactly replayed: stock_at_target=37, historical_lost=29, at target_time=100. So stock_at_target=37, historical_lost=29.\n\nThen reconstruct: current stock = 14 initial? Wait snapshot says initial_stock=14. The snapshot arm supplies \"exactly replayed historical state.\" The historical_state gives stock_at_target=37 and historical_lost=29. So after historical reconstruction through target_time, stock at 100 is 37. We don't need to process historical events because they're already embedded. We use stock_at_target=37 as starting stock for future scenario.\n\nThen apply future_schedule events from time > target up to horizon 130. All future events have times <= 130? Let's check schedule: F-00 at 101 ... F-11 at 127. All <=130. So apply all.\n\nInitial stock before future = 37. Process demands and receipts.\n\nTrack future_lost and first_future_stockout_time.\n\nLet's simulate.\n\nstock=37.\n\nF-00 t101 demand16: stock 37 -> min(37,16)=16 consumed, stock=21. lost 0.\nF-01 t102 demand16: stock21 -> consume16, stock=5. lost0.\nF-02 t107 demand10: stock5 -> consume5, stock0, lost5. stockout time=107 (unmet >0). first future stockout time=107.\nF-03 t109 receipt7: stock0+7=7.\nF-04 t112 demand9: stock7 -> consume7, stock0, lost2.\nF-05 t113 demand11: stock0 -> lost11, stock0.\nF-06 t115 demand16: lost16.\nF-07 t118 receipt2: stock0+2=2.\nF-08 t119 demand8: consume2, lost6, stock0.\nF-09 t121 receipt3: stock3.\nF-10 t124 demand12: consume3, lost9, stock0.\nF-11 t127 demand14: lost14.\n\nfuture_lost sum: 5 +2 +11 +16 +6 +9 +14 =? 5+2=7, +11=18, +16=34, +6=40, +9=49, +14=63.\n\nstock_at_horizon after all = 0.\n\nfirst_future_stockout_time = 107.\n\nstock_at_target=37, historical_lost=29.\n\nLet's submit.",
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call_a603f4f569a644d08301b31a",
+              "function": {
+                "name": "submit_answer",
+                "arguments": "{\"stock_at_target\": 37, \"historical_lost\": 29, \"stock_at_horizon\": 0, \"future_lost\": 63, \"first_future_stockout_time\": 107}"
+              }
+            }
+          ],
+          "reasoning_details": [
+            {
+              "type": "reasoning.text",
+              "text": "We are given a \"snapshot\" representation. The input has historical_state with stock_at_target=37 and historical_lost=29. There's no raw report history, just snapshot. So the canonical arm supplies already selected eligible events? Actually for snapshot arm, the historical state is exactly replayed: stock_at_target=37, historical_lost=29, at target_time=100. So stock_at_target=37, historical_lost=29.\n\nThen reconstruct: current stock = 14 initial? Wait snapshot says initial_stock=14. The snapshot arm supplies \"exactly replayed historical state.\" The historical_state gives stock_at_target=37 and historical_lost=29. So after historical reconstruction through target_time, stock at 100 is 37. We don't need to process historical events because they're already embedded. We use stock_at_target=37 as starting stock for future scenario.\n\nThen apply future_schedule events from time > target up to horizon 130. All future events have times <= 130? Let's check schedule: F-00 at 101 ... F-11 at 127. All <=130. So apply all.\n\nInitial stock before future = 37. Process demands and receipts.\n\nTrack future_lost and first_future_stockout_time.\n\nLet's simulate.\n\nstock=37.\n\nF-00 t101 demand16: stock 37 -> min(37,16)=16 consumed, stock=21. lost 0.\nF-01 t102 demand16: stock21 -> consume16, stock=5. lost0.\nF-02 t107 demand10: stock5 -> consume5, stock0, lost5. stockout time=107 (unmet >0). first future stockout time=107.\nF-03 t109 receipt7: stock0+7=7.\nF-04 t112 demand9: stock7 -> consume7, stock0, lost2.\nF-05 t113 demand11: stock0 -> lost11, stock0.\nF-06 t115 demand16: lost16.\nF-07 t118 receipt2: stock0+2=2.\nF-08 t119 demand8: consume2, lost6, stock0.\nF-09 t121 receipt3: stock3.\nF-10 t124 demand12: consume3, lost9, stock0.\nF-11 t127 demand14: lost14.\n\nfuture_lost sum: 5 +2 +11 +16 +6 +9 +14 =? 5+2=7, +11=18, +16=34, +6=40, +9=49, +14=63.\n\nstock_at_horizon after all = 0.\n\nfirst_future_stockout_time = 107.\n\nstock_at_target=37, historical_lost=29.\n\nLet's submit.",
+              "format": "unknown",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 987,
+      "completion_tokens": 708,
+      "total_tokens": 1695,
+      "cost": 0.001402225704,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 768,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.001402225704,
+        "upstream_inference_prompt_cost": 0.000171410184,
+        "upstream_inference_completions_cost": 0.00123081552
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 583,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "elapsed_seconds": 12.308819750091061,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

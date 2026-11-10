@@ -1,0 +1,163 @@
+{
+  "episode": "dspro_high_auto__raw__r1__temporal-heldout-s2026090802-b0004",
+  "base_id": "temporal-heldout-s2026090802-b0004",
+  "configuration": "dspro_high_auto",
+  "arm": "raw",
+  "rep": 1,
+  "model": "deepseek/deepseek-v4-pro-0813",
+  "request": {
+    "model": "deepseek/deepseek-v4-pro-0813",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field."
+      },
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"raw\",\"initial_stock\":12,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"reports\":[{\"event_id\":\"E-0075d0c99f46\",\"revision\":1,\"event_time\":27,\"received_time\":38,\"kind\":\"receipt\",\"quantity\":4},{\"event_id\":\"E-0075d0c99f46\",\"revision\":2,\"event_time\":27,\"received_time\":60,\"kind\":\"demand\",\"quantity\":4},{\"event_id\":\"E-2ef23bcb42db\",\"revision\":1,\"event_time\":59,\"received_time\":64,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"E-e04065e8b164\",\"revision\":1,\"event_time\":68,\"received_time\":79,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-f3d5cf1ce2d5\",\"revision\":1,\"event_time\":70,\"received_time\":82,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"E-f98296412540\",\"revision\":1,\"event_time\":73,\"received_time\":85,\"kind\":\"receipt\",\"quantity\":10},{\"event_id\":\"E-88f7852ba694\",\"revision\":1,\"event_time\":82,\"received_time\":87,\"kind\":\"demand\",\"quantity\":4},{\"event_id\":\"E-bce470156830\",\"revision\":1,\"event_time\":85,\"received_time\":92,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-eab9170f64cc\",\"revision\":1,\"event_time\":95,\"received_time\":96,\"kind\":\"demand\",\"quantity\":9},{\"event_id\":\"E-a70e8f0b7e95\",\"revision\":1,\"event_time\":97,\"received_time\":100,\"kind\":\"receipt\",\"quantity\":3},{\"event_id\":\"E-3cf6773292ce\",\"revision\":1,\"event_time\":71,\"received_time\":105,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-1e5ca46cb031\",\"revision\":1,\"event_time\":88,\"received_time\":107,\"kind\":\"receipt\",\"quantity\":3},{\"event_id\":\"E-51c05e0e95e4\",\"revision\":1,\"event_time\":3,\"received_time\":108,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-a70e8f0b7e95\",\"revision\":2,\"event_time\":92,\"received_time\":108,\"kind\":\"receipt\",\"quantity\":3},{\"event_id\":\"E-51c05e0e95e4\",\"revision\":2,\"event_time\":3,\"received_time\":122,\"kind\":\"demand\",\"quantity\":3},{\"event_id\":\"E-1e5ca46cb031\",\"revision\":2,\"event_time\":86,\"received_time\":129,\"kind\":\"receipt\",\"quantity\":3}],\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":103,\"kind\":\"receipt\",\"quantity\":6},{\"event_id\":\"F-01\",\"event_time\":105,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"F-02\",\"event_time\":107,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-03\",\"event_time\":108,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"F-04\",\"event_time\":110,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"F-05\",\"event_time\":112,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-06\",\"event_time\":113,\"kind\":\"demand\",\"quantity\":4},{\"event_id\":\"F-07\",\"event_time\":114,\"kind\":\"demand\",\"quantity\":1},{\"event_id\":\"F-08\",\"event_time\":119,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"F-09\",\"event_time\":121,\"kind\":\"receipt\",\"quantity\":3},{\"event_id\":\"F-10\",\"event_time\":122,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"F-11\",\"event_time\":125,\"kind\":\"receipt\",\"quantity\":8}]}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "submit_answer",
+          "description": "Submit exact simulated quantities.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "stock_at_target": {
+                "type": "integer"
+              },
+              "historical_lost": {
+                "type": "integer"
+              },
+              "stock_at_horizon": {
+                "type": "integer"
+              },
+              "future_lost": {
+                "type": "integer"
+              },
+              "first_future_stockout_time": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "stock_at_target",
+              "historical_lost",
+              "stock_at_horizon",
+              "future_lost",
+              "first_future_stockout_time"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_tokens": 16384,
+    "reasoning": {
+      "effort": "high"
+    },
+    "provider": {
+      "only": [
+        "baidu"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "answer": {
+    "stock_at_target": 20,
+    "historical_lost": 0,
+    "stock_at_horizon": 18,
+    "future_lost": 0,
+    "first_future_stockout_time": -1
+  },
+  "status": "submitted",
+  "cost_usd": 0.004125,
+  "response": {
+    "id": "gen-1788906019-zTtnvEfHRrBQEdIsQVbp",
+    "object": "chat.completion",
+    "created": 1788906019,
+    "model": "deepseek/deepseek-v4-pro-0813",
+    "provider": "Baidu",
+    "system_fingerprint": null,
+    "service_tier": null,
+    "choices": [
+      {
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "tool_calls",
+        "native_finish_reason": "tool_calls",
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "reasoning": "We need answer. Need simulate carefully. We can use commentary reasoning. Let's parse problem.\n\nWe have initial_stock=12, target_time=100, knowledge_cutoff=100, horizon_time=130.\n\nReports with revisions. Need first keep reports with received_time <= knowledge_cutoff (100). Then choose highest visible revision for each event_id. Revisions replace earlier reports. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. historical_lost through target_time using visible revisions. stock_at_target after these events.\n\nThen after historical reconstruction, apply future_schedule in order from reconstructed stock. stock_at_horizon after scenario; future_lost scenario only; first_future_stockout_time earliest future event time with unmet demand, -1 if no future demand unmet.\n\nNeed ensure inventory dynamics: receipts add quantity to stock. Demands consume min(stock, quantity); unmet = max(quantity - stock, 0). stockout strictly positive unmet demand, not ending zero.\n\nNeed determine visible reports at cutoff 100:\nList all reports received_time <=100:\n- E-0075 rev1 rec? received 38 kind receipt qty4 event_time27\n- E-0075 rev2 received 60 kind demand qty4 event_time27\n- E-2ef23... rev1 received 64 demand 5 event_time59\n- E-e040... rev1 received 79 demand 2 event_time68\n- E-f3d5... rev1 received 82 receipt 8 event_time70\n- E-f982... rev1 received 85 receipt 10 event_time73\n- E-88f... received87 demand4 event_time82\n- E-bce... received92 receipt11 event_time85\n- E-eab... received96 demand9 event_time95\n- E-a70e8f0b7e95 rev1 received100 receipt3 event_time97\nReports with received_time >100 excluded:\nE-3cf received105 demand2 event_time71\nE-1e5 rev1 received107 receipt3 event_time88\nE-51 rev1 received108 demand2 event_time3\nE-a70e rev2 received108 receipt3 event_time92 (revision to E-a70 but not visible at cutoff)\nE-51 rev2 received122 demand3\nE-1e5 rev2 received129 receipt3 event_time86\n\nNow choose highest visible revision for each event_id among visible reports received <=100.\nEvent IDs visible:\nE-0075d0c99f46 has rev1 and rev2 both visible. Highest = rev2, event_time 27, kind demand qty4.\nE-2ef23 rev1 demand 5 at 59.\nE-e040 rev1 demand2 at 68.\nE-f3d5 rev1 receipt8 at70.\nE-f982 rev1 receipt10 at73.\nE-88f? event_id E-88f7852ba694 rev1 demand4 at82.\nE-bce470156830 rev1 receipt11 at85.\nE-eab9170f64cc rev1 demand9 at95.\nE-a70e8f0b7e95 rev1 receipt3 at97 (rev2 received108 not visible).\n\nNon visible event IDs E-3cf, E-1e5, E-51 and rev2 E-a70 not visible. For E-a70 visible rev1.\n\nThen keep chosen events with event_time <= target_time 100. All visible chosen events have event_time <=100: 27,59,68,70,73,82,85,95,97. Good.\n\nApply in (event_time, event_id) order. Event-time ties? Need sort by event_time then event_id. Let's list sorted by event_time:\n1 E-0075d0c99f46 time27 demand qty4\n2 E-2ef23bcb42db time59 demand5\n3 E-e04065e8b164 time68 demand2\n4 E-f3d5cf1ce2d5 time70 receipt8\n5 E-f98296412540 time73 receipt10\n6 E-88f7852ba694 time82 demand4\n7 E-bce470156830 time85 receipt11\n8 E-eab9170f64cc time95 demand9\n9 E-a70e8f0b7e95 time97 receipt3\n\nWait E-f3d5 at 70 receipt8; E-3cf visibility excluded (received105) so no demand at71. Good.\n\nCompute historical:\nInitial stock 12.\n\nEvent1 demand4: stock 12 -> consume4 => 8, lost0.\nEvent2 demand5: stock8 -> consume5 =>3, lost0.\nEvent3 demand2: stock3 -> consume2 =>1, lost0.\nEvent4 receipt8: stock1+8=9.\nEvent5 receipt10: stock19.\nEvent6 demand4: stock19->15, lost0.\nEvent7 receipt11: stock26.\nEvent8 demand9: stock26->17, lost0.\nEvent9 receipt3: stock20.\n\nhistorical_lost = 0. stock_at_target=20.\n\nCheck stockout? none. At time 68 stock before demand 3, demand2 so end 1 not stockout because no unmet. Good.\n\nNow future schedule from reconstructed stock at target (20) after applying historical events, before future events. Apply future events after target? schedule event_time 103..125 all >100. Starting stock=20.\n\nFuture events in order:\nF-00 time103 receipt6 => stock20+6=26\nF-01 time105 receipt5 =>31\nF-02 time107 demand12 =>31-12=19, unmet0\nF-03 time108 demand5 =>19-5=14, unmet0\nF-04 time110 receipt7 =>21\nF-05 time112 demand12 =>21-12=9, unmet0\nF-06 time113 demand4 =>9-4=5, unmet0\nF-07 time114 demand1 =>5-1=4, unmet0\nF-08 time119 receipt5 =>9\nF-09 time121 receipt3 =>12\nF-10 time122 demand2 =>12-2=10, unmet0\nF-11 time125 receipt8 =>18\nfuture_lost=0. stock_at_horizon after scenario at time 130? Future events all <=125, after applying all: stock=18. No future unmet, first_future_stockout_time=-1.\n\nNeed be cautious: The future schedule is explicitly known hypothetical scenario after historical reconstruction. horizon=130, future events at 125 finish, stock_at_horizon 18. Yes.\n\nBut let's ensure no hidden complexities about \"after historical reconstruction, apply every event in given future_schedule in (event_time, event_id) order from the reconstructed stock.\" Starting from reconstructed stock at target_time? It says \"After the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock.\" Is starting stock after target_time historical, i.e., stock_at_target = reconstructed stock? Yes. Future events start time103, no event at target exactly. Stock 20.\n\nNeed maybe future first stockout time: \"earliest future scenario event time with unmet demand\". If no unmet demand -1. We have 0 unmet all events? Let's verify F-05 demand12 with stock21 -> end9 no unmet. F-02 with stock31 ->19. F-03 19 demand5 ->14. No stockout. Correct.\n\nNeed submit exact integers. Use tool.",
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call_6faeaf68d55c4954ba22a0e6",
+              "function": {
+                "name": "submit_answer",
+                "arguments": "{\"stock_at_target\": 20, \"historical_lost\": 0, \"stock_at_horizon\": 18, \"future_lost\": 0, \"first_future_stockout_time\": -1}"
+              }
+            }
+          ],
+          "reasoning_details": [
+            {
+              "type": "reasoning.text",
+              "text": "We need answer. Need simulate carefully. We can use commentary reasoning. Let's parse problem.\n\nWe have initial_stock=12, target_time=100, knowledge_cutoff=100, horizon_time=130.\n\nReports with revisions. Need first keep reports with received_time <= knowledge_cutoff (100). Then choose highest visible revision for each event_id. Revisions replace earlier reports. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. historical_lost through target_time using visible revisions. stock_at_target after these events.\n\nThen after historical reconstruction, apply future_schedule in order from reconstructed stock. stock_at_horizon after scenario; future_lost scenario only; first_future_stockout_time earliest future event time with unmet demand, -1 if no future demand unmet.\n\nNeed ensure inventory dynamics: receipts add quantity to stock. Demands consume min(stock, quantity); unmet = max(quantity - stock, 0). stockout strictly positive unmet demand, not ending zero.\n\nNeed determine visible reports at cutoff 100:\nList all reports received_time <=100:\n- E-0075 rev1 rec? received 38 kind receipt qty4 event_time27\n- E-0075 rev2 received 60 kind demand qty4 event_time27\n- E-2ef23... rev1 received 64 demand 5 event_time59\n- E-e040... rev1 received 79 demand 2 event_time68\n- E-f3d5... rev1 received 82 receipt 8 event_time70\n- E-f982... rev1 received 85 receipt 10 event_time73\n- E-88f... received87 demand4 event_time82\n- E-bce... received92 receipt11 event_time85\n- E-eab... received96 demand9 event_time95\n- E-a70e8f0b7e95 rev1 received100 receipt3 event_time97\nReports with received_time >100 excluded:\nE-3cf received105 demand2 event_time71\nE-1e5 rev1 received107 receipt3 event_time88\nE-51 rev1 received108 demand2 event_time3\nE-a70e rev2 received108 receipt3 event_time92 (revision to E-a70 but not visible at cutoff)\nE-51 rev2 received122 demand3\nE-1e5 rev2 received129 receipt3 event_time86\n\nNow choose highest visible revision for each event_id among visible reports received <=100.\nEvent IDs visible:\nE-0075d0c99f46 has rev1 and rev2 both visible. Highest = rev2, event_time 27, kind demand qty4.\nE-2ef23 rev1 demand 5 at 59.\nE-e040 rev1 demand2 at 68.\nE-f3d5 rev1 receipt8 at70.\nE-f982 rev1 receipt10 at73.\nE-88f? event_id E-88f7852ba694 rev1 demand4 at82.\nE-bce470156830 rev1 receipt11 at85.\nE-eab9170f64cc rev1 demand9 at95.\nE-a70e8f0b7e95 rev1 receipt3 at97 (rev2 received108 not visible).\n\nNon visible event IDs E-3cf, E-1e5, E-51 and rev2 E-a70 not visible. For E-a70 visible rev1.\n\nThen keep chosen events with event_time <= target_time 100. All visible chosen events have event_time <=100: 27,59,68,70,73,82,85,95,97. Good.\n\nApply in (event_time, event_id) order. Event-time ties? Need sort by event_time then event_id. Let's list sorted by event_time:\n1 E-0075d0c99f46 time27 demand qty4\n2 E-2ef23bcb42db time59 demand5\n3 E-e04065e8b164 time68 demand2\n4 E-f3d5cf1ce2d5 time70 receipt8\n5 E-f98296412540 time73 receipt10\n6 E-88f7852ba694 time82 demand4\n7 E-bce470156830 time85 receipt11\n8 E-eab9170f64cc time95 demand9\n9 E-a70e8f0b7e95 time97 receipt3\n\nWait E-f3d5 at 70 receipt8; E-3cf visibility excluded (received105) so no demand at71. Good.\n\nCompute historical:\nInitial stock 12.\n\nEvent1 demand4: stock 12 -> consume4 => 8, lost0.\nEvent2 demand5: stock8 -> consume5 =>3, lost0.\nEvent3 demand2: stock3 -> consume2 =>1, lost0.\nEvent4 receipt8: stock1+8=9.\nEvent5 receipt10: stock19.\nEvent6 demand4: stock19->15, lost0.\nEvent7 receipt11: stock26.\nEvent8 demand9: stock26->17, lost0.\nEvent9 receipt3: stock20.\n\nhistorical_lost = 0. stock_at_target=20.\n\nCheck stockout? none. At time 68 stock before demand 3, demand2 so end 1 not stockout because no unmet. Good.\n\nNow future schedule from reconstructed stock at target (20) after applying historical events, before future events. Apply future events after target? schedule event_time 103..125 all >100. Starting stock=20.\n\nFuture events in order:\nF-00 time103 receipt6 => stock20+6=26\nF-01 time105 receipt5 =>31\nF-02 time107 demand12 =>31-12=19, unmet0\nF-03 time108 demand5 =>19-5=14, unmet0\nF-04 time110 receipt7 =>21\nF-05 time112 demand12 =>21-12=9, unmet0\nF-06 time113 demand4 =>9-4=5, unmet0\nF-07 time114 demand1 =>5-1=4, unmet0\nF-08 time119 receipt5 =>9\nF-09 time121 receipt3 =>12\nF-10 time122 demand2 =>12-2=10, unmet0\nF-11 time125 receipt8 =>18\nfuture_lost=0. stock_at_horizon after scenario at time 130? Future events all <=125, after applying all: stock=18. No future unmet, first_future_stockout_time=-1.\n\nNeed be cautious: The future schedule is explicitly known hypothetical scenario after historical reconstruction. horizon=130, future events at 125 finish, stock_at_horizon 18. Yes.\n\nBut let's ensure no hidden complexities about \"after historical reconstruction, apply every event in given future_schedule in (event_time, event_id) order from the reconstructed stock.\" Starting from reconstructed stock at target_time? It says \"After the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock.\" Is starting stock after target_time historical, i.e., stock_at_target = reconstructed stock? Yes. Future events start time103, no event at target exactly. Stock 20.\n\nNeed maybe future first stockout time: \"earliest future scenario event time with unmet demand\". If no unmet demand -1. We have 0 unmet all events? Let's verify F-05 demand12 with stock21 -> end9 no unmet. F-02 with stock31 ->19. F-03 19 demand5 ->14. No stockout. Correct.\n\nNeed submit exact integers. Use tool.",
+              "format": "unknown",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1649,
+      "completion_tokens": 1742,
+      "total_tokens": 3391,
+      "cost": 0.003449876232,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 1024,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.003449876232,
+        "upstream_inference_prompt_cost": 0.000421513752,
+        "upstream_inference_completions_cost": 0.00302836248
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1615,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "elapsed_seconds": 44.08500533294864,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

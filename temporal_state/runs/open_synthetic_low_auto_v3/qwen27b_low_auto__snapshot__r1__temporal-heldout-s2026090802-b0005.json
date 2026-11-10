@@ -1,0 +1,163 @@
+{
+  "episode": "qwen27b_low_auto__snapshot__r1__temporal-heldout-s2026090802-b0005",
+  "base_id": "temporal-heldout-s2026090802-b0005",
+  "configuration": "qwen27b_low_auto",
+  "arm": "snapshot",
+  "rep": 1,
+  "model": "qwen/qwen3.8-27b",
+  "request": {
+    "model": "qwen/qwen3.8-27b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field."
+      },
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"snapshot\",\"initial_stock\":10,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":101,\"kind\":\"receipt\",\"quantity\":1},{\"event_id\":\"F-01\",\"event_time\":103,\"kind\":\"demand\",\"quantity\":9},{\"event_id\":\"F-02\",\"event_time\":109,\"kind\":\"demand\",\"quantity\":11},{\"event_id\":\"F-03\",\"event_time\":110,\"kind\":\"receipt\",\"quantity\":6},{\"event_id\":\"F-04\",\"event_time\":111,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-05\",\"event_time\":112,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"F-06\",\"event_time\":116,\"kind\":\"receipt\",\"quantity\":6},{\"event_id\":\"F-07\",\"event_time\":118,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-08\",\"event_time\":120,\"kind\":\"demand\",\"quantity\":15},{\"event_id\":\"F-09\",\"event_time\":123,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-10\",\"event_time\":124,\"kind\":\"demand\",\"quantity\":13},{\"event_id\":\"F-11\",\"event_time\":130,\"kind\":\"demand\",\"quantity\":16}],\"historical_state\":{\"stock_at_target\":38,\"historical_lost\":6}}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "submit_answer",
+          "description": "Submit exact simulated quantities.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "stock_at_target": {
+                "type": "integer"
+              },
+              "historical_lost": {
+                "type": "integer"
+              },
+              "stock_at_horizon": {
+                "type": "integer"
+              },
+              "future_lost": {
+                "type": "integer"
+              },
+              "first_future_stockout_time": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "stock_at_target",
+              "historical_lost",
+              "stock_at_horizon",
+              "future_lost",
+              "first_future_stockout_time"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_tokens": 16384,
+    "reasoning": {
+      "effort": "low"
+    },
+    "provider": {
+      "only": [
+        "akashml"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "answer": {
+    "stock_at_target": 38,
+    "historical_lost": 6,
+    "stock_at_horizon": 0,
+    "future_lost": 51,
+    "first_future_stockout_time": 120
+  },
+  "status": "submitted",
+  "cost_usd": 0.00317505,
+  "response": {
+    "id": "gen-1788903407-qZ2su0VK8RLfHY9IVJDY",
+    "object": "chat.completion",
+    "created": 1788903407,
+    "model": "qwen/qwen3.8-27b",
+    "provider": "AkashML",
+    "system_fingerprint": null,
+    "service_tier": null,
+    "choices": [
+      {
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "tool_calls",
+        "native_finish_reason": "tool_calls",
+        "message": {
+          "role": "assistant",
+          "content": "\n\nLooking at this problem, I have a snapshot input with the historical state already provided, so I just need to replay the future schedule from the reconstructed stock.\n\n**Historical state (given):**\n- stock_at_target = 38\n- historical_lost = 6\n\n**Future schedule replay (starting stock = 38):**\n\n| Event | Time | Type | Qty | Stock Before | Stock After | Lost |\n|-------|------|------|-----|--------------|-------------|------|\n| F-00 | 101 | receipt | 1 | 38 | 39 | 0 |\n| F-01 | 103 | demand | 9 | 39 | 30 | 0 |\n| F-02 | 109 | demand | 11 | 30 | 19 | 0 |\n| F-03 | 110 | receipt | 6 | 19 | 25 | 0 |\n| F-04 | 111 | demand | 12 | 25 | 13 | 0 |\n| F-05 | 112 | demand | 10 | 13 | 3 | 0 |\n| F-06 | 116 | receipt | 6 | 3 | 9 | 0 |\n| F-07 | 118 | demand | 8 | 9 | 1 | 0 |\n| F-08 | 120 | demand | 15 | 1 | 0 | **14** |\n| F-09 | 123 | demand | 8 | 0 | 0 | **8** |\n| F-10 | 124 | demand | 13 | 0 | 0 | **13** |\n| F-11 | 130 | demand | 16 | 0 | 0 | **16** |\n\n- **stock_at_horizon** = 0\n- **future_lost** = 14 + 8 + 13 + 16 = 51\n- **first_future_stockout_time** = 120 (F-08 is the first event with unmet demand)\n\n",
+          "refusal": null,
+          "reasoning": "Let me analyze this problem step by step.\n\nThe input representation is \"snapshot\", which means I'm given the historical state directly:\n- initial_stock: 10\n- target_time: 100\n- knowledge_cutoff: 100\n- horizon_time: 130\n\nThe historical state is already provided:\n- stock_at_target: 38\n- historical_lost: 6\n\nNow I need to apply the future_schedule from the reconstructed stock (38) in (event_time, event_id) order.\n\nLet me trace through the future events:\n\nStarting stock: 38\n\n1. F-00: event_time=101, receipt, quantity=1 \u2192 stock = 38 + 1 = 39\n2. F-01: event_time=103, demand, quantity=9 \u2192 stock = 39 - 9 = 30, lost = 0\n3. F-02: event_time=109, demand, quantity=11 \u2192 stock = 30 - 11 = 19, lost = 0\n4. F-03: event_time=110, receipt, quantity=6 \u2192 stock = 19 + 6 = 25\n5. F-04: event_time=111, demand, quantity=12 \u2192 stock = 25 - 12 = 13, lost = 0\n6. F-05: event_time=112, demand, quantity=10 \u2192 stock = 13 - 10 = 3, lost = 0\n7. F-06: event_time=116, receipt, quantity=6 \u2192 stock = 3 + 6 = 9\n8. F-07: event_time=118, demand, quantity=8 \u2192 stock = 9 - 8 = 1, lost = 0\n9. F-08: event_time=120, demand, quantity=15 \u2192 stock = 1, can only consume 1, lost = 15 - 1 = 14, stock = 0\n10. F-09: event_time=123, demand, quantity=8 \u2192 stock = 0, lost = 8, stock = 0\n11. F-10: event_time=124, demand, quantity=13 \u2192 stock = 0, lost = 13, stock = 0\n12. F-11: event_time=130, demand, quantity=16 \u2192 stock = 0, lost = 16, stock = 0\n\nTotal future_lost = 0 + 0 + 0 + 0 + 0 + 0 + 0 + 14 + 8 + 13 + 16 = 51\n\nstock_at_horizon = 0\n\nFirst future stockout time: The first event with unmet demand is F-08 at event_time=120 (14 units unmet).\n\nSo the answers are:\n- stock_at_target: 38\n- historical_lost: 6\n- stock_at_horizon: 0\n- future_lost: 51\n- first_future_stockout_time: 120\n",
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "chatcmpl-tool-90b38a78ce1c9ce5",
+              "function": {
+                "name": "submit_answer",
+                "arguments": "{\"stock_at_target\": 38, \"historical_lost\": 6, \"stock_at_horizon\": 0, \"future_lost\": 51, \"first_future_stockout_time\": 120}"
+              }
+            }
+          ],
+          "reasoning_details": [
+            {
+              "type": "reasoning.text",
+              "text": "Let me analyze this problem step by step.\n\nThe input representation is \"snapshot\", which means I'm given the historical state directly:\n- initial_stock: 10\n- target_time: 100\n- knowledge_cutoff: 100\n- horizon_time: 130\n\nThe historical state is already provided:\n- stock_at_target: 38\n- historical_lost: 6\n\nNow I need to apply the future_schedule from the reconstructed stock (38) in (event_time, event_id) order.\n\nLet me trace through the future events:\n\nStarting stock: 38\n\n1. F-00: event_time=101, receipt, quantity=1 \u2192 stock = 38 + 1 = 39\n2. F-01: event_time=103, demand, quantity=9 \u2192 stock = 39 - 9 = 30, lost = 0\n3. F-02: event_time=109, demand, quantity=11 \u2192 stock = 30 - 11 = 19, lost = 0\n4. F-03: event_time=110, receipt, quantity=6 \u2192 stock = 19 + 6 = 25\n5. F-04: event_time=111, demand, quantity=12 \u2192 stock = 25 - 12 = 13, lost = 0\n6. F-05: event_time=112, demand, quantity=10 \u2192 stock = 13 - 10 = 3, lost = 0\n7. F-06: event_time=116, receipt, quantity=6 \u2192 stock = 3 + 6 = 9\n8. F-07: event_time=118, demand, quantity=8 \u2192 stock = 9 - 8 = 1, lost = 0\n9. F-08: event_time=120, demand, quantity=15 \u2192 stock = 1, can only consume 1, lost = 15 - 1 = 14, stock = 0\n10. F-09: event_time=123, demand, quantity=8 \u2192 stock = 0, lost = 8, stock = 0\n11. F-10: event_time=124, demand, quantity=13 \u2192 stock = 0, lost = 13, stock = 0\n12. F-11: event_time=130, demand, quantity=16 \u2192 stock = 0, lost = 16, stock = 0\n\nTotal future_lost = 0 + 0 + 0 + 0 + 0 + 0 + 0 + 14 + 8 + 13 + 16 = 51\n\nstock_at_horizon = 0\n\nFirst future stockout time: The first event with unmet demand is F-08 at event_time=120 (14 units unmet).\n\nSo the answers are:\n- stock_at_target: 38\n- historical_lost: 6\n- stock_at_horizon: 0\n- future_lost: 51\n- first_future_stockout_time: 120\n",
+              "format": "unknown",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1137,
+      "completion_tokens": 1314,
+      "total_tokens": 2451,
+      "cost": 0.00301825,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 784,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.00301825,
+        "upstream_inference_prompt_cost": 0.00012745,
+        "upstream_inference_completions_cost": 0.0028908
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 456,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "elapsed_seconds": 67.6026123338379,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

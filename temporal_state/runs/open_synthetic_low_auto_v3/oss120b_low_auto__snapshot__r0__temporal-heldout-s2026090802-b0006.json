@@ -1,0 +1,163 @@
+{
+  "episode": "oss120b_low_auto__snapshot__r0__temporal-heldout-s2026090802-b0006",
+  "base_id": "temporal-heldout-s2026090802-b0006",
+  "configuration": "oss120b_low_auto",
+  "arm": "snapshot",
+  "rep": 0,
+  "model": "openai/gpt-oss-120b",
+  "request": {
+    "model": "openai/gpt-oss-120b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field."
+      },
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"snapshot\",\"initial_stock\":10,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":101,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-01\",\"event_time\":102,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"F-02\",\"event_time\":104,\"kind\":\"demand\",\"quantity\":3},{\"event_id\":\"F-03\",\"event_time\":107,\"kind\":\"receipt\",\"quantity\":4},{\"event_id\":\"F-04\",\"event_time\":109,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"F-05\",\"event_time\":115,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-06\",\"event_time\":116,\"kind\":\"demand\",\"quantity\":4},{\"event_id\":\"F-07\",\"event_time\":121,\"kind\":\"receipt\",\"quantity\":9},{\"event_id\":\"F-08\",\"event_time\":123,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"F-09\",\"event_time\":127,\"kind\":\"demand\",\"quantity\":3},{\"event_id\":\"F-10\",\"event_time\":129,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"F-11\",\"event_time\":130,\"kind\":\"receipt\",\"quantity\":7}],\"historical_state\":{\"stock_at_target\":68,\"historical_lost\":67}}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "submit_answer",
+          "description": "Submit exact simulated quantities.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "stock_at_target": {
+                "type": "integer"
+              },
+              "historical_lost": {
+                "type": "integer"
+              },
+              "stock_at_horizon": {
+                "type": "integer"
+              },
+              "future_lost": {
+                "type": "integer"
+              },
+              "first_future_stockout_time": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "stock_at_target",
+              "historical_lost",
+              "stock_at_horizon",
+              "future_lost",
+              "first_future_stockout_time"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_tokens": 16384,
+    "reasoning": {
+      "effort": "low"
+    },
+    "provider": {
+      "only": [
+        "cerebras"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "answer": {
+    "stock_at_target": 10,
+    "historical_lost": 0,
+    "stock_at_horizon": 29,
+    "future_lost": 4,
+    "first_future_stockout_time": 104
+  },
+  "status": "submitted",
+  "cost_usd": 0.0006714500000000001,
+  "response": {
+    "id": "gen-1788901758-Tq41SLdeW84eQeh90HQE",
+    "object": "chat.completion",
+    "created": 1788901758,
+    "model": "openai/gpt-oss-120b",
+    "provider": "Cerebras",
+    "system_fingerprint": "fp_b546658c8e93d2e57ef2",
+    "service_tier": null,
+    "choices": [
+      {
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "tool_calls",
+        "native_finish_reason": "tool_calls",
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "reasoning": "We need compute from initial 10 and historical events? Snapshot implies no raw reports, so just initial and future schedule applies directly. target_time=100, all future events start at 101, so historical up to target is just initial stock no events. stock_at_target given 68? But initial 10, no events, so stock_at_target should be 10. However they gave historical_state with stock_at_target 68, historical_lost 67. Probably we must ignore provided and compute? The instruction: Return five integers. Use provided historical_state? Probably we must output those values as they are. Then apply future_schedule to reconstruct stock at horizon 130.\n\nStart stock=10.\n\nEvent list sorted:\n\n101 demand 8: stock>=8? stock 10 -> consume 8, stock=2, lost=0\n\n102 demand 2: stock 2 consumes 2, stock=0, lost 0\n\n104 demand 3: stock 0, unmet 3 lost 3, stock stays 0, future_lost accum.\n\n107 receipt 4: stock=4\n\n109 receipt 11: stock=15\n\n115 demand 12: stock 15 consume12 -> stock=3, lost0\n\n116 demand 4: stock3 consume3, unmet1 lost1, stock=0, future_lost +=1 now total 4\n\n121 receipt9: stock=9\n\n123 receipt8: stock=17\n\n127 demand3: stock17 consume3 -> stock14\n\n129 receipt8: stock22\n\n130 receipt7: stock29\n\nThus stock_at_horizon =29. future_lost=4. first_future_stockout_time is earliest event with unmet demand: that's at 104 (unmet 3). So time 104.\n\nNow submit answer with stock_at_target =? According to reconstruction, target_time 100 stock =10. But they gave historical_state maybe to be used? I think we must output our computed values. So stock_at_target=10, historical_lost=0 (no historical events). But they gave historical_lost 67 contradictory. Probably they expect to use given historical_state as answer for those fields. The prompt: \"Return five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; ...\". So we compute. No historical events, so 0. I'll output computed.\n\n",
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "654a4643f",
+              "function": {
+                "name": "submit_answer",
+                "arguments": "{\"stock_at_target\":10,\"historical_lost\":0,\"stock_at_horizon\":29,\"future_lost\":4,\"first_future_stockout_time\":104}"
+              }
+            }
+          ],
+          "reasoning_details": [
+            {
+              "type": "reasoning.text",
+              "text": "We need compute from initial 10 and historical events? Snapshot implies no raw reports, so just initial and future schedule applies directly. target_time=100, all future events start at 101, so historical up to target is just initial stock no events. stock_at_target given 68? But initial 10, no events, so stock_at_target should be 10. However they gave historical_state with stock_at_target 68, historical_lost 67. Probably we must ignore provided and compute? The instruction: Return five integers. Use provided historical_state? Probably we must output those values as they are. Then apply future_schedule to reconstruct stock at horizon 130.\n\nStart stock=10.\n\nEvent list sorted:\n\n101 demand 8: stock>=8? stock 10 -> consume 8, stock=2, lost=0\n\n102 demand 2: stock 2 consumes 2, stock=0, lost 0\n\n104 demand 3: stock 0, unmet 3 lost 3, stock stays 0, future_lost accum.\n\n107 receipt 4: stock=4\n\n109 receipt 11: stock=15\n\n115 demand 12: stock 15 consume12 -> stock=3, lost0\n\n116 demand 4: stock3 consume3, unmet1 lost1, stock=0, future_lost +=1 now total 4\n\n121 receipt9: stock=9\n\n123 receipt8: stock=17\n\n127 demand3: stock17 consume3 -> stock14\n\n129 receipt8: stock22\n\n130 receipt7: stock29\n\nThus stock_at_horizon =29. future_lost=4. first_future_stockout_time is earliest event with unmet demand: that's at 104 (unmet 3). So time 104.\n\nNow submit answer with stock_at_target =? According to reconstruction, target_time 100 stock =10. But they gave historical_state maybe to be used? I think we must output our computed values. So stock_at_target=10, historical_lost=0 (no historical events). But they gave historical_lost 67 contradictory. Probably they expect to use given historical_state as answer for those fields. The prompt: \"Return five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; ...\". So we compute. No historical events, so 0. I'll output computed.\n\n",
+              "format": "unknown",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 757,
+      "completion_tokens": 542,
+      "total_tokens": 1299,
+      "cost": 0.00067145,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 384,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.00067145,
+        "upstream_inference_prompt_cost": 0.00026495,
+        "upstream_inference_completions_cost": 0.0004065
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 488,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "elapsed_seconds": 0.9927951248828322,
+  "score": {
+    "valid": true,
+    "exact": false,
+    "joint_exact": false,
+    "per_metric": {
+      "stock_at_target": false,
+      "historical_lost": false,
+      "stock_at_horizon": false,
+      "future_lost": false,
+      "first_future_stockout_time": false
+    },
+    "stock_at_target_exact": false,
+    "historical_lost_exact": false,
+    "stock_at_horizon_exact": false,
+    "future_lost_exact": false,
+    "first_future_stockout_time_exact": false
+  }
+}

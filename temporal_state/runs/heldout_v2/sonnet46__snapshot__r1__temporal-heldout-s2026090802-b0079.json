@@ -1,0 +1,127 @@
+{
+  "episode": "sonnet46__snapshot__r1__temporal-heldout-s2026090802-b0079",
+  "base_id": "temporal-heldout-s2026090802-b0079",
+  "configuration": "sonnet46",
+  "arm": "snapshot",
+  "rep": 1,
+  "model": "claude-sonnet-4-6",
+  "request": {
+    "model": "claude-sonnet-4-6",
+    "system": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"snapshot\",\"initial_stock\":14,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":106,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-01\",\"event_time\":110,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"F-02\",\"event_time\":111,\"kind\":\"receipt\",\"quantity\":1},{\"event_id\":\"F-03\",\"event_time\":112,\"kind\":\"demand\",\"quantity\":4},{\"event_id\":\"F-04\",\"event_time\":115,\"kind\":\"receipt\",\"quantity\":1},{\"event_id\":\"F-05\",\"event_time\":117,\"kind\":\"demand\",\"quantity\":7},{\"event_id\":\"F-06\",\"event_time\":118,\"kind\":\"demand\",\"quantity\":1},{\"event_id\":\"F-07\",\"event_time\":119,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"F-08\",\"event_time\":120,\"kind\":\"demand\",\"quantity\":3},{\"event_id\":\"F-09\",\"event_time\":121,\"kind\":\"receipt\",\"quantity\":1},{\"event_id\":\"F-10\",\"event_time\":123,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"F-11\",\"event_time\":127,\"kind\":\"receipt\",\"quantity\":8}],\"historical_state\":{\"stock_at_target\":62,\"historical_lost\":2}}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "submit_answer",
+        "description": "Submit exact simulated quantities.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            },
+            "stock_at_horizon": {
+              "type": "integer"
+            },
+            "future_lost": {
+              "type": "integer"
+            },
+            "first_future_stockout_time": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost",
+            "stock_at_horizon",
+            "future_lost",
+            "first_future_stockout_time"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    ],
+    "tool_choice": {
+      "type": "auto",
+      "disable_parallel_tool_use": true
+    },
+    "max_tokens": 16384
+  },
+  "answer": {
+    "stock_at_target": 62,
+    "historical_lost": 2,
+    "stock_at_horizon": 61,
+    "future_lost": 0,
+    "first_future_stockout_time": -1
+  },
+  "status": "submitted",
+  "cost_usd": 0.013719,
+  "response": {
+    "model": "claude-sonnet-4-6",
+    "id": "msg_011CeqEe9356oYPi6m6HFGVs",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll work through this step by step.\n\n## Historical State (Snapshot Arm)\n\nThe snapshot arm provides the already-reconstructed historical state directly:\n- **stock_at_target** = 62\n- **historical_lost** = 2\n\n## Future Schedule Simulation\n\nStarting from stock = 62 at target_time = 100, apply future events in (event_time, event_id) order:\n\n| Event | Time | Kind | Qty | Stock Before | Met | Lost | Stock After |\n|-------|------|------|-----|-------------|-----|------|-------------|\n| F-00 | 106 | demand | 12 | 62 | 12 | 0 | 50 |\n| F-01 | 110 | receipt | 12 | 50 | \u2014 | \u2014 | 62 |\n| F-02 | 111 | receipt | 1 | 62 | \u2014 | \u2014 | 63 |\n| F-03 | 112 | demand | 4 | 63 | 4 | 0 | 59 |\n| F-04 | 115 | receipt | 1 | 59 | \u2014 | \u2014 | 60 |\n| F-05 | 117 | demand | 7 | 60 | 7 | 0 | 53 |\n| F-06 | 118 | demand | 1 | 53 | 1 | 0 | 52 |\n| F-07 | 119 | receipt | 8 | 52 | \u2014 | \u2014 | 60 |\n| F-08 | 120 | demand | 3 | 60 | 3 | 0 | 57 |\n| F-09 | 121 | receipt | 1 | 57 | \u2014 | \u2014 | 58 |\n| F-10 | 123 | demand | 5 | 58 | 5 | 0 | 53 |\n| F-11 | 127 | receipt | 8 | 53 | \u2014 | \u2014 | 61 |\n\n- **Stock at horizon (t=130)** = 61\n- **Future lost** = 0 (stock was always sufficient)\n- **First future stockout time** = -1 (no unmet future demand)"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01Tij5HxEu7ef1x3KTVxN2oS",
+        "name": "submit_answer",
+        "input": {
+          "stock_at_target": 62,
+          "historical_lost": 2,
+          "stock_at_horizon": 61,
+          "future_lost": 0,
+          "first_future_stockout_time": -1
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1138,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 687,
+      "service_tier": "standard",
+      "inference_geo": "global"
+    }
+  },
+  "elapsed_seconds": 33.27962108410429,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

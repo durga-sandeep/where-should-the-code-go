@@ -1,0 +1,127 @@
+{
+  "episode": "sonnet46__canonical__r0__temporal-heldout-s2026090802-b0009",
+  "base_id": "temporal-heldout-s2026090802-b0009",
+  "configuration": "sonnet46",
+  "arm": "canonical",
+  "rep": 0,
+  "model": "claude-sonnet-4-6",
+  "request": {
+    "model": "claude-sonnet-4-6",
+    "system": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"canonical\",\"initial_stock\":23,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":102,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"F-01\",\"event_time\":103,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-02\",\"event_time\":104,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-03\",\"event_time\":105,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"F-04\",\"event_time\":107,\"kind\":\"receipt\",\"quantity\":4},{\"event_id\":\"F-05\",\"event_time\":112,\"kind\":\"demand\",\"quantity\":11},{\"event_id\":\"F-06\",\"event_time\":116,\"kind\":\"demand\",\"quantity\":14},{\"event_id\":\"F-07\",\"event_time\":120,\"kind\":\"demand\",\"quantity\":13},{\"event_id\":\"F-08\",\"event_time\":122,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"F-09\",\"event_time\":124,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"F-10\",\"event_time\":127,\"kind\":\"demand\",\"quantity\":11},{\"event_id\":\"F-11\",\"event_time\":130,\"kind\":\"demand\",\"quantity\":11}],\"eligible_events\":[{\"event_id\":\"E-2ae9c7c0ddb6\",\"revision\":1,\"event_time\":25,\"received_time\":33,\"kind\":\"demand\",\"quantity\":1},{\"event_id\":\"E-137126463c38\",\"revision\":1,\"event_time\":29,\"received_time\":39,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"E-f3facca9a1e3\",\"revision\":2,\"event_time\":32,\"received_time\":70,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"E-eba4379e60ae\",\"revision\":1,\"event_time\":55,\"received_time\":66,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-5b9dff9ac21a\",\"revision\":2,\"event_time\":65,\"received_time\":85,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-8e0c933bce59\",\"revision\":1,\"event_time\":70,\"received_time\":79,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"E-33d82a47097d\",\"revision\":1,\"event_time\":85,\"received_time\":91,\"kind\":\"receipt\",\"quantity\":1},{\"event_id\":\"E-4b494392b147\",\"revision\":1,\"event_time\":94,\"received_time\":100,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"E-fed23d034a3b\",\"revision\":1,\"event_time\":96,\"received_time\":100,\"kind\":\"receipt\",\"quantity\":6}]}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "submit_answer",
+        "description": "Submit exact simulated quantities.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            },
+            "stock_at_horizon": {
+              "type": "integer"
+            },
+            "future_lost": {
+              "type": "integer"
+            },
+            "first_future_stockout_time": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost",
+            "stock_at_horizon",
+            "future_lost",
+            "first_future_stockout_time"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    ],
+    "tool_choice": {
+      "type": "auto",
+      "disable_parallel_tool_use": true
+    },
+    "max_tokens": 16384
+  },
+  "answer": {
+    "stock_at_target": 30,
+    "historical_lost": 0,
+    "stock_at_horizon": 0,
+    "future_lost": 57,
+    "first_future_stockout_time": 116
+  },
+  "status": "submitted",
+  "cost_usd": 0.020853,
+  "response": {
+    "model": "claude-sonnet-4-6",
+    "id": "msg_011CeqG5wTeCmQFgQTGucvRp",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll simulate the inventory system step by step.\n\n## Historical Reconstruction\n\n**Initial stock:** 23\n\nThe eligible_events are already filtered and selected (canonical arm), so I apply them in (event_time, event_id) order:\n\n| # | event_time | event_id | kind | qty | stock before | stock after | lost |\n|---|-----------|----------|------|-----|-------------|------------|------|\n| 1 | 25 | E-2ae9c7c0ddb6 | demand | 1 | 23 | 22 | 0 |\n| 2 | 29 | E-137126463c38 | demand | 10 | 22 | 12 | 0 |\n| 3 | 32 | E-f3facca9a1e3 | receipt | 5 | 12 | 17 | 0 |\n| 4 | 55 | E-eba4379e60ae | demand | 2 | 17 | 15 | 0 |\n| 5 | 65 | E-5b9dff9ac21a | receipt | 11 | 15 | 26 | 0 |\n| 6 | 70 | E-8e0c933bce59 | demand | 5 | 26 | 21 | 0 |\n| 7 | 85 | E-33d82a47097d | receipt | 1 | 21 | 22 | 0 |\n| 8 | 94 | E-4b494392b147 | receipt | 2 | 22 | 24 | 0 |\n| 9 | 96 | E-fed23d034a3b | receipt | 6 | 24 | 30 | 0 |\n\n**stock_at_target = 30, historical_lost = 0**\n\n---\n\n## Future Scenario\n\nStarting stock: 30\n\n| # | event_time | event_id | kind | qty | stock before | stock after | lost |\n|---|-----------|----------|------|-----|-------------|------------|------|\n| 1 | 102 | F-00 | receipt | 7 | 30 | 37 | 0 |\n| 2 | 103 | F-01 | demand | 12 | 37 | 25 | 0 |\n| 3 | 104 | F-02 | demand | 8 | 25 | 17 | 0 |\n| 4 | 105 | F-03 | receipt | 2 | 17 | 19 | 0 |\n| 5 | 107 | F-04 | receipt | 4 | 19 | 23 | 0 |\n| 6 | 112 | F-05 | demand | 11 | 23 | 12 | 0 |\n| 7 | 116 | F-06 | demand | 14 | 12 | 0 | 2 \u2190 first stockout |\n| 8 | 120 | F-07 | demand | 13 | 0 | 0 | 13 |\n| 9 | 122 | F-08 | demand | 10 | 0 | 0 | 10 |\n| 10 | 124 | F-09 | demand | 10 | 0 | 0 | 10 |\n| 11 | 127 | F-10 | demand | 11 | 0 | 0 | 11 |\n| 12 | 130 | F-11 | demand | 11 | 0 | 0 | 11 |\n\n**stock_at_horizon = 0, future_lost = 2+13+10+10+11+11 = 57, first_future_stockout_time = 116**"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01Mo3rWspBTR7HxkT1n9j7ic",
+        "name": "submit_answer",
+        "input": {
+          "stock_at_target": 30,
+          "historical_lost": 0,
+          "stock_at_horizon": 0,
+          "future_lost": 57,
+          "first_future_stockout_time": 116
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1481,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 1094,
+      "service_tier": "standard",
+      "inference_geo": "global"
+    }
+  },
+  "elapsed_seconds": 32.63485925004352,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

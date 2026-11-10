@@ -1,0 +1,129 @@
+{
+  "episode": "haiku45_thinking__state_raw__r0__temporal-heldout-s2026090802-b0008",
+  "base_id": "temporal-heldout-s2026090802-b0008",
+  "configuration": "haiku45_thinking",
+  "arm": "state_raw",
+  "rep": 0,
+  "model": "claude-haiku-4-5-20251001",
+  "request": {
+    "model": "claude-haiku-4-5-20251001",
+    "system": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nThere is no future scenario in this task: do not simulate or predict anything after target_time. A separate exact program will apply any future schedule to the state you report.\nReturn two integers through submit_answer: stock_at_target, the stock on hand at target_time after replaying the selected events; and historical_lost, the total unmet demand through target_time using visible revisions.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"state_raw\",\"initial_stock\":10,\"target_time\":100,\"knowledge_cutoff\":100,\"reports\":[{\"event_id\":\"E-afb81bf7604f\",\"revision\":1,\"event_time\":15,\"received_time\":21,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-8bac3a871bdf\",\"revision\":1,\"event_time\":17,\"received_time\":29,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-5ab053bdc9f9\",\"revision\":1,\"event_time\":25,\"received_time\":36,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"E-e4b0c2a4266b\",\"revision\":1,\"event_time\":27,\"received_time\":36,\"kind\":\"demand\",\"quantity\":11},{\"event_id\":\"E-6d4da7bd558a\",\"revision\":1,\"event_time\":54,\"received_time\":55,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-d8678c331183\",\"revision\":1,\"event_time\":53,\"received_time\":63,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"E-4a6af802b4ae\",\"revision\":1,\"event_time\":58,\"received_time\":70,\"kind\":\"receipt\",\"quantity\":10},{\"event_id\":\"E-54be6e4690ae\",\"revision\":1,\"event_time\":59,\"received_time\":70,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-7dde0f237325\",\"revision\":1,\"event_time\":76,\"received_time\":79,\"kind\":\"demand\",\"quantity\":6},{\"event_id\":\"E-6a2f1e6e9426\",\"revision\":1,\"event_time\":64,\"received_time\":101,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"E-97a305e2803d\",\"revision\":1,\"event_time\":94,\"received_time\":106,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"E-344cc0dbfe07\",\"revision\":1,\"event_time\":10,\"received_time\":113,\"kind\":\"receipt\",\"quantity\":4}]}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "submit_answer",
+        "description": "Submit exact simulated quantities.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    ],
+    "tool_choice": {
+      "type": "auto",
+      "disable_parallel_tool_use": true
+    },
+    "max_tokens": 16384,
+    "thinking": {
+      "type": "enabled",
+      "budget_tokens": 4096
+    }
+  },
+  "answer": {
+    "stock_at_target": 27,
+    "historical_lost": 5
+  },
+  "status": "submitted",
+  "cost_usd": 0.014022,
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011CerXoC1PthtueY3zgh9uR",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "Let me work through this inventory system step by step.\n\nGiven information:\n- initial_stock: 10\n- target_time: 100\n- knowledge_cutoff: 100\n- reports: A list of reports with event_id, revision, event_time, received_time, kind (demand/receipt), quantity\n\nStep 1: Filter reports by knowledge_cutoff\nKeep reports where received_time <= knowledge_cutoff (100)\n\nLet me check each report:\n1. E-afb81bf7604f: received_time=21 \u2713\n2. E-8bac3a871bdf: received_time=29 \u2713\n3. E-5ab053bdc9f9: received_time=36 \u2713\n4. E-e4b0c2a4266b: received_time=36 \u2713\n5. E-6d4da7bd558a: received_time=55 \u2713\n6. E-d8678c331183: received_time=63 \u2713\n7. E-4a6af802b4ae: received_time=70 \u2713\n8. E-54be6e4690ae: received_time=70 \u2713\n9. E-7dde0f237325: received_time=79 \u2713\n10. E-6a2f1e6e9426: received_time=101 \u2717 (101 > 100, exclude)\n11. E-97a305e2803d: received_time=106 \u2717 (106 > 100, exclude)\n12. E-344cc0dbfe07: received_time=113 \u2717 (113 > 100, exclude)\nSince revisions are all 1, no deduplication needed\u2014everything that passed the cutoff stays. All remaining events also have event_time <= 100, so they all qualify for processing.\n\nNow ordering by (event_time, event_id):\n1. E-afb81bf7604f: event_time=15, demand, qty=2\n2. E-8bac3a871bdf: event_time=17, receipt, qty=11\n3. E-5ab053bdc9f9: event_time=25, kind=\n\ndemand, quantity=5\n4. E-e4b0c2a4266b: event_time=27, demand, qty=11\n5. E-d8678c331183: event_time=53, demand, qty=8\n6. E-6d4da7bd558a: event_time=54, receipt, qty=11\n7. E-4a6af802b4ae: event_time=58, receipt, qty=10\n8. E-54be6e4690ae: event_time=59, receipt, qty=12\n9. E-7dde0f237325: event_time=76, demand, qty=6\n\nThe other two events (E-6a2f1e6e9426 at t=64, E-97a305e2803d at t=94) got excluded earlier by the knowledge cutoff, so they drop out of this ordered sequence entirely.\n\nNow I simulate starting with stock=10:\n- demand 2 \u2192 stock 8\n- receipt 11 \u2192 stock 19\n- demand 5 \u2192 stock 14\n- demand 11 \u2192 stock 3\n- demand 8 \u2192 only 3 available, unmet=5, stock 0, lost=5\n- receipt 11 \u2192 stock 11\n- receipt 10 \u2192 stock 21\n- receipt 12 \u2192 stock 33\n- demand 6 \u2192 stock 27\n\nNo events remain before t=100.\n\nFinal: stock_at_target=27, historical_lost=5",
+        "signature": "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"
+      },
+      {
+        "type": "text",
+        "text": "Looking at this lost-sales inventory problem, I need to:\n\n1. **Filter by knowledge_cutoff (100)**: Keep reports with received_time \u2264 100\n   - Exclude: E-6a2f1e6e9426 (received_time=101), E-97a305e2803d (received_time=106), E-344cc0dbfe07 (received_time=113)\n   - Keep: 9 reports\n\n2. **Select highest revision per event_id**: All have revision=1, so no changes\n\n3. **Keep events with event_time \u2264 target_time (100)**: All remaining qualify\n\n4. **Sort by (event_time, event_id) and apply in order**:\n\nStarting stock: 10\n\n| Event | Time | Type | Qty | Stock Before | Unmet | Stock After | Lost |\n|-------|------|------|-----|--------------|-------|-------------|------|\n| E-afb81bf7604f | 15 | demand | 2 | 10 | 0 | 8 | 0 |\n| E-8bac3a871bdf | 17 | receipt | 11 | 8 | - | 19 | 0 |\n| E-5ab053bdc9f9 | 25 | demand | 5 | 19 | 0 | 14 | 0 |\n| E-e4b0c2a4266b | 27 | demand | 11 | 14 | 0 | 3 | 0 |\n| E-d8678c331183 | 53 | demand | 8 | 3 | 5 | 0 | 5 |\n| E-6d4da7bd558a | 54 | receipt | 11 | 0 | - | 11 | 5 |\n| E-4a6af802b4ae | 58 | receipt | 10 | 11 | - | 21 | 5 |\n| E-54be6e4690ae | 59 | receipt | 12 | 21 | - | 33 | 5 |\n| E-7dde0f237325 | 76 | demand | 6 | 33 | 0 | 27 | 5 |"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01XKatLYutPMGUP4czryfzP3",
+        "name": "submit_answer",
+        "input": {
+          "stock_at_target": 27,
+          "historical_lost": 5
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ],
+    "container": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1222,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 2560,
+      "output_tokens_details": {
+        "thinking_tokens": 1928
+      },
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    }
+  },
+  "elapsed_seconds": 35.3547105420148,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  },
+  "hybrid_answer": {
+    "stock_at_target": 27,
+    "historical_lost": 5,
+    "stock_at_horizon": 16,
+    "future_lost": 2,
+    "first_future_stockout_time": 111
+  }
+}

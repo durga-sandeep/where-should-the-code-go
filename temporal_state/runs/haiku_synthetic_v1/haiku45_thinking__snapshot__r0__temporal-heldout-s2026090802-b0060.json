@@ -1,0 +1,140 @@
+{
+  "episode": "haiku45_thinking__snapshot__r0__temporal-heldout-s2026090802-b0060",
+  "base_id": "temporal-heldout-s2026090802-b0060",
+  "configuration": "haiku45_thinking",
+  "arm": "snapshot",
+  "rep": 0,
+  "model": "claude-haiku-4-5-20251001",
+  "request": {
+    "model": "claude-haiku-4-5-20251001",
+    "system": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"snapshot\",\"initial_stock\":21,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":107,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-01\",\"event_time\":108,\"kind\":\"demand\",\"quantity\":16},{\"event_id\":\"F-02\",\"event_time\":111,\"kind\":\"demand\",\"quantity\":9},{\"event_id\":\"F-03\",\"event_time\":112,\"kind\":\"receipt\",\"quantity\":3},{\"event_id\":\"F-04\",\"event_time\":114,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-05\",\"event_time\":115,\"kind\":\"receipt\",\"quantity\":6},{\"event_id\":\"F-06\",\"event_time\":118,\"kind\":\"demand\",\"quantity\":13},{\"event_id\":\"F-07\",\"event_time\":119,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"F-08\",\"event_time\":120,\"kind\":\"demand\",\"quantity\":15},{\"event_id\":\"F-09\",\"event_time\":121,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"F-10\",\"event_time\":126,\"kind\":\"demand\",\"quantity\":16},{\"event_id\":\"F-11\",\"event_time\":130,\"kind\":\"receipt\",\"quantity\":1}],\"historical_state\":{\"stock_at_target\":36,\"historical_lost\":0}}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "submit_answer",
+        "description": "Submit exact simulated quantities.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            },
+            "stock_at_horizon": {
+              "type": "integer"
+            },
+            "future_lost": {
+              "type": "integer"
+            },
+            "first_future_stockout_time": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost",
+            "stock_at_horizon",
+            "future_lost",
+            "first_future_stockout_time"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    ],
+    "tool_choice": {
+      "type": "auto",
+      "disable_parallel_tool_use": true
+    },
+    "max_tokens": 16384,
+    "thinking": {
+      "type": "enabled",
+      "budget_tokens": 4096
+    }
+  },
+  "answer": {
+    "stock_at_target": 36,
+    "historical_lost": 0,
+    "stock_at_horizon": 1,
+    "future_lost": 64,
+    "first_future_stockout_time": 114
+  },
+  "status": "submitted",
+  "cost_usd": 0.014767,
+  "response": {
+    "model": "claude-haiku-4-5-20251001",
+    "id": "msg_011CerYLZR7skRnd95AZGG9L",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "Let me parse this carefully according to the problem statement:\n\n**Given:**\n- input_representation: \"snapshot\" - this means we're using the snapshot arm where historical_state is already provided\n- initial_stock: 21\n- target_time: 100\n- knowledge_cutoff: 100\n- horizon_time: 130\n- historical_state: stock_at_target=36, historical_lost=0\n- future_schedule: A list of events from time 107 to 130\n\n**Task:**\nSince we're using the snapshot arm, the historical_state is already provided:\n- stock_at_target = 36\n- historical_lost = 0\n\nNow I need to simulate the future_schedule starting from stock_at_target (36) and track:\n1. stock_at_horizon: stock after applying all future events up to time 130\n2. future_lost: total lost demand in the future scenario only\n3. first_future_stockout_time: earliest event_time in future where unmet demand occurs, or -1 if none\n\nLet me apply the future_schedule in order:\n\nStarting stock: 36\n\n1. F-00, time=107, demand=8: stock=36, demand=8 \u2192 min(36,8)=8 consumed, stock=28, lost=0\n2. F-01, time=108, demand=16: stock=28, demand=16 \u2192 min(28,16)=16 consumed, stock=12, lost=0\n3. F-02, time=111, demand=9: stock=12, demand=9 \u2192 min(12,9)=9 consumed, stock=3, lost=0\n4. F-03, time=112, receipt=3: stock=3+3=6\n5. F-04, time=114, demand=12: stock=6, demand=12 \u2192 min(6,12)=6 consumed, stock=0, lost=6 (FIRST STOCKOUT at time 114)\n6. F-05, time=115, receipt=6: stock=0+6=6\n7. F-06, time=118, demand=13: stock=6, demand=13 \u2192 6 consumed, stock=0, lost=6\n8. F-07, time=119, demand=10: stock=0 \u2192 0 consumed, lost=10\n9. F-08, time=120, demand=15: stock=0 \u2192 0 consumed, lost=15\n10. F-09, time=121, demand=10: stock=0 \u2192 0 consumed, lost=10\n\nStock stays at zero through this stretch, with lost demand accumulating each time since nothing is left to fulfill the growing requests. Continuing to trace the remaining events from here.\n\n= 0\n- lost_this_event = 13 - 6 = 7 (unmet demand = 7)\n- total_future_lost = 6 + 7 = 13\n\nF-07, time=?, demand=10: stock=0, lost=10, total=23\nF-08, demand=15: stock=0, lost=15, total=38\nF-09, demand=10: stock=0, lost=10, total=48\nF-10, demand=16: stock=0, lost=16, total=64\nF-11, receipt=1: stock=1\n\nFinal stock_at_horizon=1, total_future_lost=64, first_future_stockout_time=114.\n\nSo: stock_at_target=36, historical_lost=0, stock_at_horizon=1, future_lost=64, first_future_stockout_time=114.",
+        "signature": "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"
+      },
+      {
+        "type": "text",
+        "text": "Looking at this snapshot-based scenario, I need to:\n\n1. **Use the provided historical state** (snapshot arm):\n   - stock_at_target = 36\n   - historical_lost = 0\n\n2. **Simulate the future_schedule** starting from stock = 36, applying events in (event_time, event_id) order through horizon_time = 130:\n\n| Event | Time | Type | Qty | Stock Before | Stock After | Lost |\n|-------|------|------|-----|--------------|-------------|------|\n| F-00 | 107 | demand | 8 | 36 | 28 | 0 |\n| F-01 | 108 | demand | 16 | 28 | 12 | 0 |\n| F-02 | 111 | demand | 9 | 12 | 3 | 0 |\n| F-03 | 112 | receipt | 3 | 3 | 6 | \u2014 |\n| F-04 | 114 | demand | 12 | 6 | 0 | 6 \u26a0\ufe0f |\n| F-05 | 115 | receipt | 6 | 0 | 6 | \u2014 |\n| F-06 | 118 | demand | 13 | 6 | 0 | 7 |\n| F-07 | 119 | demand | 10 | 0 | 0 | 10 |\n| F-08 | 120 | demand | 15 | 0 | 0 | 15 |\n| F-09 | 121 | demand | 10 | 0 | 0 | 10 |\n| F-10 | 126 | demand | 16 | 0 | 0 | 16 |\n| F-11 | 130 | receipt | 1 | 0 | 1 | \u2014 |\n\n**Results:**\n- stock_at_horizon = 1\n- future_lost = 6 + 7 + 10 + 15 + 10 + 16 = 64\n- first_future_stockout_time = 114 (F-04 is the first future event with unmet demand)"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_016qWnfrqk62qZgkjKf1UvR9",
+        "name": "submit_answer",
+        "input": {
+          "stock_at_target": 36,
+          "historical_lost": 0,
+          "stock_at_horizon": 1,
+          "future_lost": 64,
+          "first_future_stockout_time": 114
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ],
+    "container": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1167,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 2720,
+      "output_tokens_details": {
+        "thinking_tokens": 2043
+      },
+      "service_tier": "standard",
+      "inference_geo": "not_available"
+    }
+  },
+  "elapsed_seconds": 35.82335541595239,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "episode": "sonnet46_thinking__state_raw__r0__temporal-heldout-s2026090802-b0063",
+  "base_id": "temporal-heldout-s2026090802-b0063",
+  "configuration": "sonnet46_thinking",
+  "arm": "state_raw",
+  "rep": 0,
+  "model": "claude-sonnet-4-6",
+  "request": {
+    "model": "claude-sonnet-4-6",
+    "system": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nThere is no future scenario in this task: do not simulate or predict anything after target_time. A separate exact program will apply any future schedule to the state you report.\nReturn two integers through submit_answer: stock_at_target, the stock on hand at target_time after replaying the selected events; and historical_lost, the total unmet demand through target_time using visible revisions.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"state_raw\",\"initial_stock\":10,\"target_time\":100,\"knowledge_cutoff\":100,\"reports\":[{\"event_id\":\"E-26eba89f1f33\",\"revision\":1,\"event_time\":2,\"received_time\":2,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-01760d7cefe1\",\"revision\":1,\"event_time\":10,\"received_time\":10,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-e7aea100db3a\",\"revision\":1,\"event_time\":11,\"received_time\":11,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"E-d332e04a6b5b\",\"revision\":1,\"event_time\":18,\"received_time\":18,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-84708a32d911\",\"revision\":1,\"event_time\":37,\"received_time\":37,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"E-0cc0369c7da6\",\"revision\":1,\"event_time\":43,\"received_time\":43,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-f97b21a983e1\",\"revision\":1,\"event_time\":45,\"received_time\":45,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-4b85a5329c1f\",\"revision\":1,\"event_time\":48,\"received_time\":48,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"E-8f4c8b4704aa\",\"revision\":1,\"event_time\":67,\"received_time\":67,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"E-79505667a12e\",\"revision\":1,\"event_time\":74,\"received_time\":74,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"E-575168968089\",\"revision\":1,\"event_time\":76,\"received_time\":76,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-575168968089\",\"revision\":2,\"event_time\":75,\"received_time\":86,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-466580f73f54\",\"revision\":1,\"event_time\":93,\"received_time\":93,\"kind\":\"demand\",\"quantity\":1},{\"event_id\":\"E-466580f73f54\",\"revision\":2,\"event_time\":93,\"received_time\":100,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"E-26eba89f1f33\",\"revision\":2,\"event_time\":4,\"received_time\":108,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-8f4c8b4704aa\",\"revision\":2,\"event_time\":67,\"received_time\":126,\"kind\":\"receipt\",\"quantity\":12}]}"
+      }
+    ],
+    "tools": [
+      {
+        "name": "submit_answer",
+        "description": "Submit exact simulated quantities.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    ],
+    "tool_choice": {
+      "type": "auto",
+      "disable_parallel_tool_use": true
+    },
+    "max_tokens": 16384,
+    "thinking": {
+      "type": "enabled",
+      "budget_tokens": 4096
+    }
+  },
+  "answer": {
+    "stock_at_target": 11,
+    "historical_lost": 0
+  },
+  "status": "submitted",
+  "cost_usd": 0.054954,
+  "response": {
+    "model": "claude-sonnet-4-6",
+    "id": "msg_011CeqSTkNBGjHMZU4wGgtpj",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "Let me work through this step by step.\n\n**Step 1: Filter reports with received_time <= knowledge_cutoff (100)**\n\nknowledge_cutoff = 100, so I keep reports with received_time <= 100:\n\n- E-26eba89f1f33, rev1, event_time=2, received_time=2, receipt, qty=12 \u2713\n- E-01760d7cefe1, rev1, event_time=10, received_time=10, receipt, qty=11 \u2713\n- E-e7aea100db3a, rev1, event_time=11, received_\n\ntime=11, receipt, qty=2 \u2713\n\nContinuing through the list, I include the demand and receipt events at times 18, 37, 43, 45, 48, 67, 74, and 76, plus the revised versions for E-575168968089 (received at 86) and E-466580f73f54 (received at 100). I exclude E-26eba89f1f33 rev2 and E-8f4c8b4704aa rev2 since their received_time exceeds 100.\n\nNow I move to selecting the highest visible revision for each report.\n\nid \u2014 mostly rev1, but rev2 for E-575168968089 and E-466580f73f54 since those revisions are visible by the target time. All these selected events fall within the target_time cutoff of 100, so none get filtered out at this stage. I now need to sort them by (event_time, event_id) to apply them in the correct order.\n\nNow I'm simulating the stock trajectory starting from an initial stock of 10, applying each event in chronological order.\n\n: after receipts bring stock to 35, the demand events at times 18, 37, and 43 draw it down to 23 with no shortages so far.",
+        "signature": "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"
+      },
+      {
+        "type": "text",
+        "text": "I'll work through this systematically, step by step.\n\n---\n\n### Step 1 \u2013 Filter to received_time \u2264 100 (knowledge cutoff)\n\n| event_id | rev | event_time | received_time | kind | qty | Visible? |\n|---|---|---|---|---|---|---|\n| E-26eba89f1f33 | 1 | 2 | 2 | receipt | 12 | \u2705 |\n| E-01760d7cefe1 | 1 | 10 | 10 | receipt | 11 | \u2705 |\n| E-e7aea100db3a | 1 | 11 | 11 | receipt | 2 | \u2705 |\n| E-d332e04a6b5b | 1 | 18 | 18 | demand | 2 | \u2705 |\n| E-84708a32d911 | 1 | 37 | 37 | demand | 8 | \u2705 |\n| E-0cc0369c7da6 | 1 | 43 | 43 | demand | 2 | \u2705 |\n| E-f97b21a983e1 | 1 | 45 | 45 | receipt | 7 | \u2705 |\n| E-4b85a5329c1f | 1 | 48 | 48 | demand | 12 | \u2705 |\n| E-8f4c8b4704aa | 1 | 67 | 67 | demand | 12 | \u2705 |\n| E-79505667a12e | 1 | 74 | 74 | receipt | 8 | \u2705 |\n| E-575168968089 | 1 | 76 | 76 | receipt | 7 | \u2705 |\n| E-575168968089 | 2 | 75 | 86 | receipt | 7 | \u2705 |\n| E-466580f73f54 | 1 | 93 | 93 | demand | 1 | \u2705 |\n| E-466580f73f54 | 2 | 93 | 100 | demand | 10 | \u2705 |\n| E-26eba89f1f33 | 2 | 4 | 108 | receipt | 12 | \u274c |\n| E-8f4c8b4704aa | 2 | 67 | 126 | receipt | 12 | \u274c |\n\n---\n\n### Step 2 \u2013 Pick highest visible revision per event_id\n\n| event_id | Rev chosen | event_time | kind | qty |\n|---|---|---|---|---|\n| E-26eba89f1f33 | **1** (rev2 invisible) | 2 | receipt | 12 |\n| E-01760d7cefe1 | **1** | 10 | receipt | 11 |\n| E-e7aea100db3a | **1** | 11 | receipt | 2 |\n| E-d332e04a6b5b | **1** | 18 | demand | 2 |\n| E-84708a32d911 | **1** | 37 | demand | 8 |\n| E-0cc0369c7da6 | **1** | 43 | demand | 2 |\n| E-f97b21a983e1 | **1** | 45 | receipt | 7 |\n| E-4b85a5329c1f | **1** | 48 | demand | 12 |\n| E-8f4c8b4704aa | **1** (rev2 invisible) | 67 | demand | 12 |\n| E-79505667a12e | **1** | 74 | receipt | 8 |\n| E-575168968089 | **2** \u2192 event_time=75 | 75 | receipt | 7 |\n| E-466580f73f54 | **2** | 93 | demand | 10 |\n\n---\n\n### Step 3 \u2013 Keep event_time \u2264 100 \u2192 all 12 events qualify\n\n---\n\n### Step 4 \u2013 Sort by (event_time, event_id) and simulate from initial_stock = 10\n\n| # | event_time | event_id | kind | qty | Stock before | Stock after | Lost |\n|---|---|---|---|---|---|---|---|\n| 1 | 2 | E-26eba89f1f33 | receipt | 12 | 10 | **22** | 0 |\n| 2 | 10 | E-01760d7cefe1 | receipt | 11 | 22 | **33** | 0 |\n| 3 | 11 | E-e7aea100db3a | receipt | 2 | 33 | **35** | 0 |\n| 4 | 18 | E-d332e04a6b5b | demand | 2 | 35 | **33** | 0 |\n| 5 | 37 | E-84708a32d911 | demand | 8 | 33 | **25** | 0 |\n| 6 | 43 | E-0cc0369c7da6 | demand | 2 | 25 | **23** | 0 |\n| 7 | 45 | E-f97b21a983e1 | receipt | 7 | 23 | **30** | 0 |\n| 8 | 48 | E-4b85a5329c1f | demand | 12 | 30 | **18** | 0 |\n| 9 | 67 | E-8f4c8b4704aa | demand | 12 | 18 | **6** | 0 |\n| 10 | 74 | E-79505667a12e | receipt | 8 | 6 | **14** | 0 |\n| 11 | 75 | E-575168968089 | receipt | 7 | 14 | **21** | 0 |\n| 12 | 93 | E-466580f73f54 | demand | 10 | 21 | **11** | 0 |\n\n**stock_at_target = 11 | historical_lost = 0**"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01Htqe4sgQxtoHhdvxnDpDKV",
+        "name": "submit_answer",
+        "input": {
+          "stock_at_target": 11,
+          "historical_lost": 0
+        },
+        "caller": {
+          "type": "direct"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "stop_details": null,
+    "usage": {
+      "input_tokens": 1373,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 3389,
+      "output_tokens_details": {
+        "thinking_tokens": 1716
+      },
+      "service_tier": "standard",
+      "inference_geo": "global"
+    }
+  },
+  "elapsed_seconds": 58.168456458020955,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  },
+  "hybrid_answer": {
+    "stock_at_target": 11,
+    "historical_lost": 0,
+    "stock_at_horizon": 19,
+    "future_lost": 12,
+    "first_future_stockout_time": 120
+  }
+}

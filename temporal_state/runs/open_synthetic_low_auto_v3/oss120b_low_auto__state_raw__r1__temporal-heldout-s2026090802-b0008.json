@@ -1,0 +1,155 @@
+{
+  "episode": "oss120b_low_auto__state_raw__r1__temporal-heldout-s2026090802-b0008",
+  "base_id": "temporal-heldout-s2026090802-b0008",
+  "configuration": "oss120b_low_auto",
+  "arm": "state_raw",
+  "rep": 1,
+  "model": "openai/gpt-oss-120b",
+  "request": {
+    "model": "openai/gpt-oss-120b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nThere is no future scenario in this task: do not simulate or predict anything after target_time. A separate exact program will apply any future schedule to the state you report.\nReturn two integers through submit_answer: stock_at_target, the stock on hand at target_time after replaying the selected events; and historical_lost, the total unmet demand through target_time using visible revisions."
+      },
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"state_raw\",\"initial_stock\":10,\"target_time\":100,\"knowledge_cutoff\":100,\"reports\":[{\"event_id\":\"E-afb81bf7604f\",\"revision\":1,\"event_time\":15,\"received_time\":21,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-8bac3a871bdf\",\"revision\":1,\"event_time\":17,\"received_time\":29,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-5ab053bdc9f9\",\"revision\":1,\"event_time\":25,\"received_time\":36,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"E-e4b0c2a4266b\",\"revision\":1,\"event_time\":27,\"received_time\":36,\"kind\":\"demand\",\"quantity\":11},{\"event_id\":\"E-6d4da7bd558a\",\"revision\":1,\"event_time\":54,\"received_time\":55,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-d8678c331183\",\"revision\":1,\"event_time\":53,\"received_time\":63,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"E-4a6af802b4ae\",\"revision\":1,\"event_time\":58,\"received_time\":70,\"kind\":\"receipt\",\"quantity\":10},{\"event_id\":\"E-54be6e4690ae\",\"revision\":1,\"event_time\":59,\"received_time\":70,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-7dde0f237325\",\"revision\":1,\"event_time\":76,\"received_time\":79,\"kind\":\"demand\",\"quantity\":6},{\"event_id\":\"E-6a2f1e6e9426\",\"revision\":1,\"event_time\":64,\"received_time\":101,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"E-97a305e2803d\",\"revision\":1,\"event_time\":94,\"received_time\":106,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"E-344cc0dbfe07\",\"revision\":1,\"event_time\":10,\"received_time\":113,\"kind\":\"receipt\",\"quantity\":4}]}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "submit_answer",
+          "description": "Submit exact simulated quantities.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "stock_at_target": {
+                "type": "integer"
+              },
+              "historical_lost": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "stock_at_target",
+              "historical_lost"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_tokens": 16384,
+    "reasoning": {
+      "effort": "low"
+    },
+    "provider": {
+      "only": [
+        "cerebras"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "answer": {
+    "stock_at_target": 27,
+    "historical_lost": 5
+  },
+  "status": "submitted",
+  "cost_usd": 0.0007103,
+  "response": {
+    "id": "gen-1788901534-rxChYFrMGHmc0r424EAx",
+    "object": "chat.completion",
+    "created": 1788901534,
+    "model": "openai/gpt-oss-120b",
+    "provider": "Cerebras",
+    "system_fingerprint": "fp_b546658c8e93d2e57ef2",
+    "service_tier": null,
+    "choices": [
+      {
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "tool_calls",
+        "native_finish_reason": "tool_calls",
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "reasoning": "We need to filter reports with received_time <= knowledge_cutoff (100). So exclude those with received_time >100: check each.\n\nList:\nE-afb81... rt 21 <=100 keep.\nE-8bac... rt29 keep.\nE-5ab0... rt36 keep.\nE-e4b0... rt36 keep.\nE-6d4d... rt55 keep.\nE-d867... rt63 keep.\nE-4a6a... rt70 keep.\nE-54be... rt70 keep.\nE-7dde... rt79 keep.\nE-6a2f... rt101 >100 exclude.\nE-97a3... rt106 exclude.\nE-344c... rt113 exclude.\n\nNow for each event_id keep highest revision (all revision 1). So keep those.\n\nNow keep events with event_time <= target_time (100). All remaining have times <=100 indeed.\n\nNow sort by (event_time, event_id). Let's list:\n\nevent_time 10: E-344cc0dbfe07 excluded (not visible). So none at 10.\n\n15: E-afb81bf7604f demand 2\n17: E-8bac3a871bdf receipt 11\n25: E-5ab053bdc9f9 demand 5\n27: E-e4b0c2a4266b demand 11\n53: E-d8678c331183 demand 8\n54: E-6d4da7bd558a receipt 11\n58: E-4a6af802b4ae receipt 10\n59: E-54be6e4690ae receipt 12\n64: (excluded) none\n76: E-7dde0f237325 demand 6\n\nAlso event_time maybe others? that's all.\n\nNow simulate starting stock 10.\n\nInitialize lost=0.\n\nAt 15 demand 2: stock 10->8, lost 0.\n\n17 receipt +11: stock 19.\n\n25 demand 5: stock 19->14.\n\n27 demand 11: stock 14->3.\n\n53 demand 8: stock 3, can consume 3, unmet 5 lost+5, stock becomes 0.\n\n54 receipt +11: stock 11.\n\n58 receipt +10: stock 21.\n\n59 receipt +12: stock 33.\n\n76 demand 6: stock 33->27, lost unchanged.\n\nFinal stock =27. Historical lost =5.\n\nReturn.",
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "63e06df3d",
+              "function": {
+                "name": "submit_answer",
+                "arguments": "{\"stock_at_target\":27,\"historical_lost\":5}"
+              }
+            }
+          ],
+          "reasoning_details": [
+            {
+              "type": "reasoning.text",
+              "text": "We need to filter reports with received_time <= knowledge_cutoff (100). So exclude those with received_time >100: check each.\n\nList:\nE-afb81... rt 21 <=100 keep.\nE-8bac... rt29 keep.\nE-5ab0... rt36 keep.\nE-e4b0... rt36 keep.\nE-6d4d... rt55 keep.\nE-d867... rt63 keep.\nE-4a6a... rt70 keep.\nE-54be... rt70 keep.\nE-7dde... rt79 keep.\nE-6a2f... rt101 >100 exclude.\nE-97a3... rt106 exclude.\nE-344c... rt113 exclude.\n\nNow for each event_id keep highest revision (all revision 1). So keep those.\n\nNow keep events with event_time <= target_time (100). All remaining have times <=100 indeed.\n\nNow sort by (event_time, event_id). Let's list:\n\nevent_time 10: E-344cc0dbfe07 excluded (not visible). So none at 10.\n\n15: E-afb81bf7604f demand 2\n17: E-8bac3a871bdf receipt 11\n25: E-5ab053bdc9f9 demand 5\n27: E-e4b0c2a4266b demand 11\n53: E-d8678c331183 demand 8\n54: E-6d4da7bd558a receipt 11\n58: E-4a6af802b4ae receipt 10\n59: E-54be6e4690ae receipt 12\n64: (excluded) none\n76: E-7dde0f237325 demand 6\n\nAlso event_time maybe others? that's all.\n\nNow simulate starting stock 10.\n\nInitialize lost=0.\n\nAt 15 demand 2: stock 10->8, lost 0.\n\n17 receipt +11: stock 19.\n\n25 demand 5: stock 19->14.\n\n27 demand 11: stock 14->3.\n\n53 demand 8: stock 3, can consume 3, unmet 5 lost+5, stock becomes 0.\n\n54 receipt +11: stock 11.\n\n58 receipt +10: stock 21.\n\n59 receipt +12: stock 33.\n\n76 demand 6: stock 33->27, lost unchanged.\n\nFinal stock =27. Historical lost =5.\n\nReturn.",
+              "format": "unknown",
+              "index": 0
+            }
+          ]
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 853,
+      "completion_tokens": 549,
+      "total_tokens": 1402,
+      "cost": 0.0007103,
+      "is_byok": false,
+      "prompt_tokens_details": {
+        "cached_tokens": 256,
+        "cache_write_tokens": 0,
+        "audio_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost_details": {
+        "upstream_inference_cost": 0.0007103,
+        "upstream_inference_prompt_cost": 0.00029855,
+        "upstream_inference_completions_cost": 0.00041175
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 516,
+        "image_tokens": 0,
+        "audio_tokens": 0
+      }
+    }
+  },
+  "elapsed_seconds": 1.0768366660922766,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  },
+  "hybrid_answer": {
+    "stock_at_target": 27,
+    "historical_lost": 5,
+    "stock_at_horizon": 16,
+    "future_lost": 2,
+    "first_future_stockout_time": 111
+  }
+}

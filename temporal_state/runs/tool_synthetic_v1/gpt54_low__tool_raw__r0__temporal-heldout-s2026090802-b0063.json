@@ -1,0 +1,261 @@
+{
+  "episode": "gpt54_low__tool_raw__r0__temporal-heldout-s2026090802-b0063",
+  "base_id": "temporal-heldout-s2026090802-b0063",
+  "configuration": "gpt54_low",
+  "arm": "tool_raw",
+  "rep": 0,
+  "model": "gpt-5.4-2026-03-05",
+  "request": {
+    "model": "gpt-5.4-2026-03-05",
+    "instructions": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field.\nA Python code execution tool is available; you may use it to perform the replay exactly. The final answer must still be submitted through submit_answer.",
+    "input": [
+      {
+        "role": "user",
+        "content": "{\"input_representation\":\"tool_raw\",\"initial_stock\":10,\"target_time\":100,\"knowledge_cutoff\":100,\"horizon_time\":130,\"reports\":[{\"event_id\":\"E-26eba89f1f33\",\"revision\":1,\"event_time\":2,\"received_time\":2,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-01760d7cefe1\",\"revision\":1,\"event_time\":10,\"received_time\":10,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-e7aea100db3a\",\"revision\":1,\"event_time\":11,\"received_time\":11,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"E-d332e04a6b5b\",\"revision\":1,\"event_time\":18,\"received_time\":18,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-84708a32d911\",\"revision\":1,\"event_time\":37,\"received_time\":37,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"E-0cc0369c7da6\",\"revision\":1,\"event_time\":43,\"received_time\":43,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-f97b21a983e1\",\"revision\":1,\"event_time\":45,\"received_time\":45,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-4b85a5329c1f\",\"revision\":1,\"event_time\":48,\"received_time\":48,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"E-8f4c8b4704aa\",\"revision\":1,\"event_time\":67,\"received_time\":67,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"E-79505667a12e\",\"revision\":1,\"event_time\":74,\"received_time\":74,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"E-575168968089\",\"revision\":1,\"event_time\":76,\"received_time\":76,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-575168968089\",\"revision\":2,\"event_time\":75,\"received_time\":86,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-466580f73f54\",\"revision\":1,\"event_time\":93,\"received_time\":93,\"kind\":\"demand\",\"quantity\":1},{\"event_id\":\"E-466580f73f54\",\"revision\":2,\"event_time\":93,\"received_time\":100,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"E-26eba89f1f33\",\"revision\":2,\"event_time\":4,\"received_time\":108,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-8f4c8b4704aa\",\"revision\":2,\"event_time\":67,\"received_time\":126,\"kind\":\"receipt\",\"quantity\":12}],\"future_schedule\":[{\"event_id\":\"F-00\",\"event_time\":101,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-01\",\"event_time\":102,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"F-02\",\"event_time\":106,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"F-03\",\"event_time\":109,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"F-04\",\"event_time\":112,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"F-05\",\"event_time\":117,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-06\",\"event_time\":119,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"F-07\",\"event_time\":120,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-08\",\"event_time\":123,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"F-09\",\"event_time\":128,\"kind\":\"demand\",\"quantity\":6},{\"event_id\":\"F-10\",\"event_time\":129,\"kind\":\"receipt\",\"quantity\":10},{\"event_id\":\"F-11\",\"event_time\":130,\"kind\":\"receipt\",\"quantity\":8}]}"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "name": "submit_answer",
+        "description": "Submit exact simulated quantities.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            },
+            "stock_at_horizon": {
+              "type": "integer"
+            },
+            "future_lost": {
+              "type": "integer"
+            },
+            "first_future_stockout_time": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost",
+            "stock_at_horizon",
+            "future_lost",
+            "first_future_stockout_time"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      },
+      {
+        "type": "code_interpreter",
+        "container": {
+          "type": "auto"
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": false,
+    "max_output_tokens": 16384,
+    "reasoning": {
+      "effort": "low"
+    },
+    "store": false
+  },
+  "answer": {
+    "stock_at_target": 11,
+    "historical_lost": 0,
+    "stock_at_horizon": 19,
+    "future_lost": 12,
+    "first_future_stockout_time": 120
+  },
+  "status": "submitted",
+  "cost_usd": 0.0330525,
+  "response": {
+    "id": "resp_0a1144b32109cd9f016a9fad304d4c87d088a0fab77089fc23",
+    "object": "response",
+    "created_at": 1788849456,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1788849467,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": "Simulate a fictional lost-sales inventory system exactly. There is no stochastic prediction and no missing information beyond the explicit reporting cutoff.\nReceipts add quantity to stock. Demands consume min(stock, quantity); any unmet quantity is lost (never backlogged). A stockout means strictly positive unmet demand, not merely ending with zero stock.\nFor raw report histories: first keep reports with received_time <= knowledge_cutoff. Then choose the highest visible revision for EACH event_id. Revisions REPLACE earlier reports, not add to them. Then keep chosen events with event_time <= target_time. Apply these events in (event_time, event_id) order, starting from initial_stock. Ignore any report not visible at the knowledge cutoff even if its event occurred earlier. Arrival order is not event order.\nThe canonical arm supplies the already selected eligible events in event-time order. The snapshot arm supplies the exactly replayed historical state. These are explicitly identified, executable preprocessing interventions.\nAfter the historical reconstruction, apply every event in the given future_schedule in (event_time, event_id) order from the reconstructed stock. This is an explicitly known hypothetical scenario, not privileged knowledge about a real future.\nReturn five integers through submit_answer: stock_at_target; total historical_lost through target_time using visible revisions; stock_at_horizon after the scenario; future_lost for the scenario ONLY; first_future_stockout_time, the earliest future scenario event time with unmet demand, or -1 if no future demand is unmet. Do not count historical stockouts in that last field.\nA Python code execution tool is available; you may use it to perform the replay exactly. The final answer must still be submitted through submit_answer.",
+    "max_output_tokens": 16384,
+    "max_tool_calls": null,
+    "model": "gpt-5.4-2026-03-05",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_0a1144b32109cd9f016a9fad30fa2487d09b46a2cfcb761928",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqn6074wLqFDNRi3SJidChuGqt25RIa002cMPvorU-DxQgxVDmUQm339094pBT1UJlstwwyJQwHZ4AFI3AzQ95sMkPWydJqcXcC8Do7srdHFaBqoKuDH_yhEVLHAZAgKmoVbRtt-WpIizmLCPl4ucZDAjt8M4oHl7erswFy12qoSrLDjY5tKn6wWcEFcCCgaeSfDYbjYr9SuGwy5z0PmNeGuFv3OFYWN--pnqU7yCPAu6oXds0tISYJjNEiPfHQU58tMBcjkI94RwoW6jZBvY0MZ8wOaUPZYjmsyg0Ady4lnJp19bZRQCExnRIhANrYcZO3JfY3RNLAdwPV5UzBIpM4HbVFJ8lY_J2WPN2bd6_kzr9nsRH7Nud_JaPFYLJ9eoHQwEFDKQ0DH9Bcz2xKXJ6gbZQtTDJFIN1okP59Hl9mkw3bTf3qciQb0mm2k7fl-Q48vh8GKhikdg4iIXC34gQqK4WecRIcXNjjKzTHYMnCdFigTZp3ELwOoUEd7KJApBRdQI-B1OF-LGtBhrffVvBDPOcPR4iROW9QGsq8CDv5acy5qTSHBUn8nUlOV_0oIp5y4neWtps2ziDGYhGFAUJZNorC9yUnBCAi5zb_z-sZep7DF-b7va-n4smoCYFHtMFcOvbYfh7427QlyJEUGnRaeDDi0CgeZ7LmmycKNj44r7ZRIIUJU009EeRFYqyiQ1UyLji0-Jql9wHTxyGtNjuO67GJaryRkgDRDyMidWXhV7qyPAp-O8lJ4TM4VUZUG-alvLG9ILDB8qUCe5IAAZZx4F-YiRqMnWA3fJya7otFOXsC6JP9_aRmlnhynqubmZvjdXn8SQujYxOqBuKb95gMDezHSS4npslD5sSgJlcw4LZ33guyhmKs1Yl3-F4pdspocAdeOwLN34gOe7k6xF75nKOqiqbk3oth45wSdrLd2A32mCcBrETxmq1h7gnIpJ77IzeoPzl2ybFI2G5waGWQpYsS_1SZlESvDPdDCZzA1q18lbmAv-SckpUPs-cYp9awS9l-UcRDal0y_6yZj1WnP-uZeWgwKK1yzGVIsmwjcPEbHU2veYGKh_YqOTwGaCNxCD3P1prKirAOg4ple_d5XdMMcAnfV0m1j46Mj4LZa-iJfWiXQsEVjFtiRSbIyYpDIxbblpZ4UVto1uiIzKA1lCyrxVAKcL5EhecD388EpLaOzPHg8pRgoPuHj02vkG6xtMv",
+        "summary": []
+      },
+      {
+        "id": "ci_0a1144b32109cd9f016a9fad310cb087d09d1a53a1f30c0c14",
+        "type": "code_interpreter_call",
+        "status": "completed",
+        "code": "initial_stock=10\ntarget_time=100\nknowledge_cutoff=100\nreports=[{\"event_id\":\"E-26eba89f1f33\",\"revision\":1,\"event_time\":2,\"received_time\":2,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-01760d7cefe1\",\"revision\":1,\"event_time\":10,\"received_time\":10,\"kind\":\"receipt\",\"quantity\":11},{\"event_id\":\"E-e7aea100db3a\",\"revision\":1,\"event_time\":11,\"received_time\":11,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"E-d332e04a6b5b\",\"revision\":1,\"event_time\":18,\"received_time\":18,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-84708a32d911\",\"revision\":1,\"event_time\":37,\"received_time\":37,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"E-0cc0369c7da6\",\"revision\":1,\"event_time\":43,\"received_time\":43,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"E-f97b21a983e1\",\"revision\":1,\"event_time\":45,\"received_time\":45,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-4b85a5329c1f\",\"revision\":1,\"event_time\":48,\"received_time\":48,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"E-8f4c8b4704aa\",\"revision\":1,\"event_time\":67,\"received_time\":67,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"E-79505667a12e\",\"revision\":1,\"event_time\":74,\"received_time\":74,\"kind\":\"receipt\",\"quantity\":8},{\"event_id\":\"E-575168968089\",\"revision\":1,\"event_time\":76,\"received_time\":76,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-575168968089\",\"revision\":2,\"event_time\":75,\"received_time\":86,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"E-466580f73f54\",\"revision\":1,\"event_time\":93,\"received_time\":93,\"kind\":\"demand\",\"quantity\":1},{\"event_id\":\"E-466580f73f54\",\"revision\":2,\"event_time\":93,\"received_time\":100,\"kind\":\"demand\",\"quantity\":10},{\"event_id\":\"E-26eba89f1f33\",\"revision\":2,\"event_time\":4,\"received_time\":108,\"kind\":\"receipt\",\"quantity\":12},{\"event_id\":\"E-8f4c8b4704aa\",\"revision\":2,\"event_time\":67,\"received_time\":126,\"kind\":\"receipt\",\"quantity\":12}]\nvisible=[r for r in reports if r['received_time']<=knowledge_cutoff]\nfrom collections import defaultdict\nbest={}\nfor r in visible:\n    eid=r['event_id']\n    if eid not in best or r['revision']>best[eid]['revision']:\n        best[eid]=r\nchosen=[r for r in best.values() if r['event_time']<=target_time]\nchosen=sorted(chosen,key=lambda r:(r['event_time'], r['event_id']))\nchosen\n",
+        "container_id": "cntr_6a9fad308a908198aaa33efba3066b7d003044b79e37dd09",
+        "outputs": null
+      },
+      {
+        "id": "ci_0a1144b32109cd9f016a9fad355d2087d0a52939c6caca78d1",
+        "type": "code_interpreter_call",
+        "status": "completed",
+        "code": "stock=initial_stock\nlost=0\nhist=[]\nfor r in chosen:\n    if r['kind']=='receipt':\n        stock+=r['quantity']\n        hist.append((r['event_time'],r['event_id'],r['kind'],r['quantity'],stock,lost,0))\n    else:\n        served=min(stock,r['quantity'])\n        unmet=r['quantity']-served\n        stock-=served\n        lost+=unmet\n        hist.append((r['event_time'],r['event_id'],r['kind'],r['quantity'],stock,lost,unmet))\nstock,lost,hist\n",
+        "container_id": "cntr_6a9fad308a908198aaa33efba3066b7d003044b79e37dd09",
+        "outputs": null
+      },
+      {
+        "id": "rs_0a1144b32109cd9f016a9fad378bd487d0933cb13f5ba6a063",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqn607_Gliq_B1zrWvpB2QyiJVaWPQgpyQyVyfpeBy9eviFCrpgHCldx1AZa5Re7U_v_C7iovi-nK2rixd4oaAH0U6_lCbzmsjyNt_y8ajhA_ven-VcSZUv63Ha6NhdPWbhYRkBV0nTYjLtcecAmudz1keGwarNcynCaq9HUCRtDd0ZGa7k5ZSOGvoM-z5zF7bncjA-ptYeLuT7T7kSZoL6RNjqqJloeP74QIs5ftH_YuwIws8hsTnb-9p1ciHiP4Giobsr-5A1sw4CjF8YNL4-bOl15cU1g-1f46gBM_POJWk8PS6ctxtVejtd5_bjzv4U-l748a3t1V3ez6Qhi0B9xKK6SLsAvmhoxgS0K76eoWRoBbaLH4oUmxp6mTglU-fbVdvGzXMPm1-5bWMaDv4Oxe-DtL5t5GsdMySxafDqq5TdMeVUviHyIs9wnLS8iUPo5hfBDN4YzEz7hBSfqS4bS-vKK-nsnZFDNFm07PyZdRKjnG1ZQ2SsNnSV_7ZFliIgdXaG5H5C2TF4X4QorOntXWbIeTNHjnOgLpETkyqhtkdgSxN_MyB1DV9f2sc0DvZZWiJRyyEsrIjyuG5QBshXyRUAcjx_2yoMjHLedeRejUqTEvbiC6TxplJM2Z1kyJ5p8OTNgwrtAe9nh1RJbR462_Xb6edV5F0Plo_W8UQibmoNWCzGJsGy7tLrj5y0Imw5Dy8gp6DVDdx08Olo3wAIN3xGSgKo2RsxcwcQHRjaAg6-nYjwnD6Kjx9r_K5QSOzggrIa_0iQPS8TEujlFeMklu-fXmygnRtb9Yp9CV98gDY4NoU_YfZQw_bl7RTs5cMkVOb1jhDli6oWRq9DHDr3w2Q-D6K_UGimfR8M2jCzCHS_OdnJBuAvF-DPC9XuawQo2tmipHhSC106jR_xqdHt9VwE0SNiaMidFDwekJFkD6wSSBX6P8sjDI47SlnPXFIJOrIkdSV_TrvUnbnQeR-drFsXAz8d5hb3ObKlCDKNcGWu5tf3Pk9sCaIrtyGZ-pokeYQwrcwPQOPJc_pouUp2kuDzYHRA3hcncG0quszNeU9SPq-_pRT-95sn1xjKwE4wZdxLoV7Woi_Ga3gYdOqeo5r-UpziQZd0jM3LN3Ku4FqvVWOspM_jpUYXUq78ywtf1wqnP28BlAaZ57StYSNHFsR7JP5yXbjbhAV9wOqwVqpfRRsqdsk48CkzjJAGvdiJt-XabIQ5toT5Vl_DYPx6Ae7iqNpteLq1G_qolL9gagCZvc=",
+        "summary": []
+      },
+      {
+        "id": "ci_0a1144b32109cd9f016a9fad37b32087d0ab0502f04bfcea60",
+        "type": "code_interpreter_call",
+        "status": "completed",
+        "code": "future=[{\"event_id\":\"F-00\",\"event_time\":101,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-01\",\"event_time\":102,\"kind\":\"receipt\",\"quantity\":2},{\"event_id\":\"F-02\",\"event_time\":106,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"F-03\",\"event_time\":109,\"kind\":\"demand\",\"quantity\":2},{\"event_id\":\"F-04\",\"event_time\":112,\"kind\":\"receipt\",\"quantity\":5},{\"event_id\":\"F-05\",\"event_time\":117,\"kind\":\"demand\",\"quantity\":8},{\"event_id\":\"F-06\",\"event_time\":119,\"kind\":\"demand\",\"quantity\":5},{\"event_id\":\"F-07\",\"event_time\":120,\"kind\":\"demand\",\"quantity\":12},{\"event_id\":\"F-08\",\"event_time\":123,\"kind\":\"receipt\",\"quantity\":7},{\"event_id\":\"F-09\",\"event_time\":128,\"kind\":\"demand\",\"quantity\":6},{\"event_id\":\"F-10\",\"event_time\":129,\"kind\":\"receipt\",\"quantity\":10},{\"event_id\":\"F-11\",\"event_time\":130,\"kind\":\"receipt\",\"quantity\":8}]\nfuture=sorted(future,key=lambda r:(r['event_time'],r['event_id']))\nstock2=stock\nflost=0\nfirst=-1\nftrace=[]\nfor r in future:\n    if r['kind']=='receipt':\n        stock2+=r['quantity']\n        ftrace.append((r['event_time'],r['event_id'],r['kind'],r['quantity'],stock2,flost,0))\n    else:\n        served=min(stock2,r['quantity']); unmet=r['quantity']-served\n        stock2-=served; flost+=unmet\n        if unmet>0 and first==-1: first=r['event_time']\n        ftrace.append((r['event_time'],r['event_id'],r['kind'],r['quantity'],stock2,flost,unmet))\nstock2,flost,first,ftrace\n",
+        "container_id": "cntr_6a9fad308a908198aaa33efba3066b7d003044b79e37dd09",
+        "outputs": null
+      },
+      {
+        "id": "fc_0a1144b32109cd9f016a9fad3ad67c87d0b0b8cfc39bc455a7",
+        "type": "function_call",
+        "status": "completed",
+        "arguments": "{\"stock_at_target\":11,\"historical_lost\":0,\"stock_at_horizon\":19,\"future_lost\":12,\"first_future_stockout_time\":120}",
+        "call_id": "call_6G5uAirzaEoA2DASbbOpYjrj",
+        "name": "submit_answer"
+      }
+    ],
+    "parallel_tool_calls": false,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "in_memory",
+    "reasoning": {
+      "context": "current_turn",
+      "effort": "low",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [
+      {
+        "type": "code_interpreter",
+        "container": {
+          "type": "auto"
+        }
+      },
+      {
+        "type": "function",
+        "description": "Submit exact simulated quantities.",
+        "name": "submit_answer",
+        "output_schema": null,
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "stock_at_target": {
+              "type": "integer"
+            },
+            "historical_lost": {
+              "type": "integer"
+            },
+            "stock_at_horizon": {
+              "type": "integer"
+            },
+            "future_lost": {
+              "type": "integer"
+            },
+            "first_future_stockout_time": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "stock_at_target",
+            "historical_lost",
+            "stock_at_horizon",
+            "future_lost",
+            "first_future_stockout_time"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    ],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 5175,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1341,
+      "output_tokens_details": {
+        "reasoning_tokens": 1293
+      },
+      "total_tokens": 6516
+    },
+    "user": null,
+    "metadata": {}
+  },
+  "elapsed_seconds": 24.787437792052515,
+  "score": {
+    "valid": true,
+    "exact": true,
+    "joint_exact": true,
+    "per_metric": {
+      "stock_at_target": true,
+      "historical_lost": true,
+      "stock_at_horizon": true,
+      "future_lost": true,
+      "first_future_stockout_time": true
+    },
+    "stock_at_target_exact": true,
+    "historical_lost_exact": true,
+    "stock_at_horizon_exact": true,
+    "future_lost_exact": true,
+    "first_future_stockout_time_exact": true
+  }
+}

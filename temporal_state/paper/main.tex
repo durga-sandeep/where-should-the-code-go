@@ -1,0 +1,186 @@
+\documentclass{article}
+\PassOptionsToPackage{numbers,sort&compress}{natbib}
+\usepackage[final,sglblindworkshop]{neurips_2026}
+\workshoptitle{Foundation Models for Temporal Systems}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs,amsmath,microtype,graphicx,url,longtable}
+\usepackage[hidelinks]{hyperref}
+\input{extension_numbers}
+\input{ladder_numbers}
+\title{Where Should the Code Go?\\Locating Foundation-Model Errors in Bitemporal Inventory Simulation}
+\author{Durga Sandeep Saluru\\
+Distyl AI\\
+\texttt{durga@distyl.ai}
+\And
+Lanchen Song\\
+Distyl AI\\
+\texttt{lanchen.song@distyl.ai}
+\And
+Aditya Kumaran\\
+Distyl AI\\
+\texttt{aditya.kumaran@distyl.ai}}
+\setcounter{topnumber}{3}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\textfraction}{0.07}
+\setlength{\textfloatsep}{9pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{5pt}
+\begin{document}
+\maketitle
+\begin{abstract}
+Operational reports carry two clocks: when an event happened and when its report arrived;
+later reports can revise earlier ones. A foundation-model component that maintains the
+state supported by the reports visible at a cutoff, then rolls a supplied scenario forward,
+can be helped by exact code before it, after it or inside the call, or asked to reason harder. We ask
+which remedy removes which error, for which models, on an exactly solvable lost-sales
+inventory environment: \TotalRequests\ independently rescored requests over twelve
+configurations of closed and open-weight models, with a forced-answer-call interface as a
+control and protocols frozen before the calls. Weak models fail in separable ways. Canonical input removes
+report-selection error, exact continuation removes rollout error, neither repairs the other,
+and which error dominates differs by model; strong models are at ceiling on raw reports.
+Asking for more reasoning is no substitute and can depend on the interface: under a forced
+answer call high effort collapses GPT-5.4 mini and DeepSeek V4 Pro, which gain or hold under
+automatic choice; on its provider the forced call disables reasoning for DeepSeek V4 Flash;
+and at high effort gpt-oss exhausts its output budget. The contribution is a controlled
+component diagnostic, released with every request, and evidence that for some model and
+provider pairs the tool-calling interface confounds reasoning evaluation.
+\end{abstract}
+
+\section{Motivation and related work}
+A receipt can occur on Monday and be recorded on Thursday; a correction can revise an
+earlier quantity. The state supported by the reports visible at a knowledge cutoff $K$ is
+therefore not the physical state, and reconstructing it requires an arrival-time cutoff,
+revision resolution, and replay in event-time order. Lost-sales dynamics make order
+consequential: unmet demand is lost, so swapping a receipt and a demand changes the
+trajectory at equal totals. We study a component that maintains this temporal state from an
+event stream and then applies an explicitly supplied future schedule, which separates state
+error from forecasting uncertainty and makes the reporting cutoff a leakage control rather
+than a nuisance.
+
+Ordinary code solves this task exactly, yet models hold operational state in agentic
+pipelines: inventory agents reason over order and arrival histories in
+context~\citep{baek2026inventory}, and their stated beliefs and actions can
+diverge~\citep{deb2026stocktake}. We ask where the designer of such a pipeline should put
+exact code, and which placement removes which error for which models, when every
+intermediate quantity has an executable ground truth; the seeded environment and every
+request and response are released.
+
+\paragraph{Related work.}
+Temporal QA benchmarks test when facts hold (valid
+time)~\citep{chu2024timebench,luo2025etrqa,wei2025time,weng2026temporalbench,tdbench2025,evolveqa2025}; BiTempQA annotates
+event and record time for QA~\citep{bitempqa}. None asks a model to reconstruct a numeric
+state \emph{as of} a record time under revisions, and the inventory benchmarks that do use
+lost-sales dynamics evaluate ordering policy, not ledger replay~\citep{baek2026inventory,deb2026stocktake}.
+Program-aided prompting puts exact execution after the model~\citep{gao2023pal,chen2023pot}
+and code-interpreter agents put it inside the call, trading arithmetic error for other
+errors~\citep{toolmyopia2025}; the three-way comparison with per-stage error attribution is,
+to our knowledge, new. On interfaces, format
+constraints are known to tax reasoning, most for weaker
+models~\citep{tam2024speakfreely,banerjee2025crane,fan2026capacity}, and more test-time
+reasoning can lower accuracy~\citep{gema2025inverse}; we find that for some model and
+provider pairs (clearly GPT-5.4 mini and DeepSeek V4 Pro, slightly GPT-5.4) the format tax
+grows with requested effort under a forced answer call, while for four others it does not. State tracking degrades with depth across
+scales~\citep{wmfam2026,sinha2025illusion}; our model ladder is only the substrate here.
+
+\section{Environment and study design}
+\paragraph{Semantics.}
+A report has a logical event identifier, revision, event time, received time, kind and
+quantity. For target time $T$ and cutoff $K$: keep reports received by $K$, retain the
+highest visible revision per event, keep events with event time at most $T$, and replay
+in (event time, identifier) order from the initial stock. A receipt of $q$ adds $q$; a
+demand of $q$ sets $x'=\max(0,x-q)$ and loses $\max(0,q-x)$. A supplied schedule through
+horizon $H$ is then applied with the same rule. The full output is five integers: stock at
+$T$, historical loss, stock at $H$, future loss, and the first future time with positive
+loss ($-1$ if none; formal rule and worked example in Appendix~\ref{app:semantics}).
+
+\paragraph{Where the code sits.}
+Three full-output arms move executable work before the model. \textbf{Raw} supplies every
+report version in received-time order, including reports after $K$ that must be ignored;
+\textbf{canonical} supplies the correctly selected, version-resolved events in event-time
+order; \textbf{snapshot} additionally supplies the exactly replayed historical state, so
+only the rollout remains. Two \textbf{state-only} arms move executable work after the
+model: with raw or canonical input and no schedule, the model returns only stock at $T$ and
+historical loss, and code applies the schedule to the emitted stock, giving a five-field
+\emph{hybrid} answer. Two \textbf{code-inside} arms give the OpenAI configurations a hosted code tool, with raw or
+canonical input and the full output; the model chooses whether to run code. A post-hoc \textbf{continuation} applies the same code to the stock emitted in the full-output
+arms; by conservation of units it is exact exactly when that stock is, so hybrid future
+accuracy equals reconstruction accuracy (an identity, verified on every answer).
+
+\paragraph{Configurations, cohorts and statistics.}
+Twelve configurations: GPT-5.4 mini and GPT-5.4 (OpenAI), Claude Haiku~4.5 and Sonnet~4.6
+each without and with extended thinking (Anthropic), and six open-weight models through
+OpenRouter, each pinned to one upstream provider: gpt-oss-20b and gpt-oss-120b, Qwen3.8-27B,
+DeepSeek V4 Flash and V4 Pro, and GLM-5.3 Flash (3.6B to 49B active parameters). The main
+table uses automatic tool choice at the lowest requested effort for every model; the OpenAI
+and open-weight models are also run under a forced answer call (the answer function is the
+only permitted action) at requested effort low and high, giving a $2\times2$ effort by
+interface cross per model. Requests use a strict integer tool schema, 16,384 output tokens and each provider's default
+sampling (we set no temperature or top-$p$), with no retries of any model output; missing, malformed, refused or truncated outputs fail.
+The synthetic cohort has 96 seeded heldout histories in a 24-cell factorial over history length, reporting
+delay, corrections and schedule type (Appendix~\ref{app:semantics}). The retail-profile cohort maps 48 public
+FreshRetailNet~\citep{wang2025freshretailnet} store windows to demand quantities; stock,
+receipts, delays and revisions are simulated. Each configuration/arm/history cell has two
+requests. Endpoints are all-five exactness and \emph{future-joint} exactness (all three
+scenario outputs). Paired differences average repetitions within history and use 10,000
+history-bootstrap percentile intervals, reported as descriptive 95\% intervals without
+multiplicity adjustment. They do not capture variation between collection periods: re-running
+one identical cell several days later moved it by 8.9 points, so we treat smaller
+differences as unresolved. Every study was fixed in a written protocol before its calls;
+independent re-parsing and re-scoring of every response found zero mismatches
+(Appendices~\ref{app:extensions} and~\ref{app:ladder}; controls in Appendix~\ref{app:controls}).
+
+\section{Results}
+\input{ladder_table}
+\paragraph{Code before the model removes selection error and most replay error, not rollout error.}
+\input{ladder_placement_findings}
+
+\paragraph{Code after the model removes rollout error but cannot repair state.}
+This holds by construction (Section~2); what is empirical is how much each model gains.
+\input{ladder_after_findings}
+
+\paragraph{Code inside the call.}
+\input{extension_tool_findings}
+
+\paragraph{Reasoning harder fails in three interface-dependent ways.}
+\input{interaction_table}
+\input{ladder_interface_findings}
+
+\paragraph{State and decision errors differ (post hoc).} For mini, 166 of 208 wrong starting
+stocks still give the right stockout decision (Appendix~\ref{app:diagnostics}).
+
+\section{Limitations and implications}
+The task is solved exactly by code; the results say where to place code around a model that
+already holds operational state, not whether a model should replace code. Synthetic histories, artificial corrections, two repetitions, one retail source
+and 96 histories limit coverage; differences under nine points, including GLM's canonical gain and
+Haiku's hybrid gain, are not resolved. Snapshot input is not a pure rollout probe for every
+model: GLM, and DeepSeek V4 Pro on retail profiles, score lower with exact state than with
+canonical input, so the state's presentation may itself change behaviour.
+Each open-weight model is served by one upstream provider whose quantization and effort
+mapping we do not control, so its interface effects are claims about the model and provider
+pair, not the model; missing answers, refusals and truncations count as failures,
+so some cells (gpt-oss-20b, high-effort gpt-oss-120b) measure completion as much as
+accuracy. GPT-5.4 under automatic choice scored lower on the snapshot and hybrid arms than
+under the forced call collected a day earlier while its raw and canonical cells did not move;
+\GptReplicationSentence
+What the diagnostic supports is narrower than its title: for weak components, reconstruction
+and rollout fail separately and code can be placed to remove each; for strong components the
+placement is moot; and an evaluation that raises reasoning effort through a forced tool call,
+or compares families under different tool-calling interfaces, can measure the interface as
+much as the model, as it clearly did here for three of the eight pairs crossed.
+
+\paragraph{Pipelines with a time-series foundation model (TSFM).}
+No TSFM is evaluated; forecasting was removed to measure state error exactly. Upstream, when an LLM reconstructs the history a TSFM consumes from late and revised reports,
+selection and replay errors become forecast inputs no forecaster can repair; normalizing
+the reports in code first removes them. Downstream, when a TSFM forecast supplies the
+schedule, the rollout our snapshot and hybrid arms isolate belongs in code, so rollout error
+is not mistaken for forecast error. The cutoff $K$ is also the leakage control a forecasting
+backtest needs: scoring on revisions not visible at $K$ overstates accuracy.
+
+\paragraph{AI assistance.} AI assistants were used extensively for design, search, code, analysis and drafting; the authors are responsible for all claims.
+
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{../references}
+\clearpage
+\input{appendix}
+\end{document}
