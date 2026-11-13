@@ -2,7 +2,7 @@
 
 Code, data and every model request and response for the paper
 
-> Durga Sandeep Saluru, Lanchen Song, Aditya Kumaran. *Where Should the Code Go? Locating Foundation-Model Errors in Bitemporal Inventory Simulation.* NeurIPS 2026 Workshop on Foundation Models for Temporal Systems (FMTS), poster.
+> Durga Sandeep Saluru, Lanchen Song, Aditya Kumaran. *Where Should the Code Go? Locating Foundation-Model Errors in Bitemporal Inventory Simulation.* NeurIPS 2026 Workshop on Foundation Models for Temporal Systems (FMTS), poster. [arXiv:2611.14671](https://arxiv.org/abs/2611.14671)
 
 The study asks where exact code should sit around a foundation-model component that reconstructs inventory state from late and revised reports and then rolls a supplied schedule forward: before the model (canonical input, exact snapshot), after it (state-only hybrid), inside the call (a code tool), or nowhere (more reasoning effort). The environment is exactly solvable, so every intermediate quantity has an executable ground truth.
 
@@ -43,13 +43,16 @@ Model responses were produced by OpenAI, Anthropic and open-weight models served
 
 ## Citation
 
-See `CITATION.cff`, or:
+Paper: [arXiv:2611.14671](https://arxiv.org/abs/2611.14671). See `CITATION.cff`, or:
 
 ```bibtex
 @inproceedings{saluru2026wherecode,
   title     = {Where Should the Code Go? Locating Foundation-Model Errors in Bitemporal Inventory Simulation},
   author    = {Saluru, Durga Sandeep and Song, Lanchen and Kumaran, Aditya},
   booktitle = {NeurIPS 2026 Workshop on Foundation Models for Temporal Systems},
-  year      = {2026}
+  year      = {2026},
+  eprint    = {2611.14671},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2611.14671}
 }
 ```
